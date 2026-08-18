@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ProductStockLevel } from '@/lib/supabase/types';
 import ProductModal from './ProductModal';
+import StockMovementModal from './StockMovementModal';
 
 interface ProductsTableProps {
   initial: ProductStockLevel[];
@@ -13,6 +14,7 @@ export default function ProductsTable({ initial }: ProductsTableProps) {
   const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<ProductStockLevel | null>(null);
+  const [movementProduct, setMovementProduct] = useState<ProductStockLevel | null>(null);
 
   const handleAddProduct = () => {
     setSelectedProduct(null);
@@ -34,9 +36,10 @@ export default function ProductsTable({ initial }: ProductsTableProps) {
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-KE', {
       style: 'currency',
-      currency: 'USD',
+      currency: 'KES',
+      maximumFractionDigits: 0,
     }).format(amount);
   };
 
@@ -97,6 +100,7 @@ export default function ProductsTable({ initial }: ProductsTableProps) {
                   <th className="py-3.5 px-4 text-right">Stock</th>
                   <th className="py-3.5 px-4 text-right">Sell price</th>
                   <th className="py-3.5 px-4 text-center">Status</th>
+                  <th className="py-3.5 px-4 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 text-ink-900">
@@ -130,6 +134,18 @@ export default function ProductsTable({ initial }: ProductsTableProps) {
                           In stock
                         </span>
                       )}
+                    </td>
+                    <td className="py-4 px-4 text-right">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setMovementProduct(product);
+                        }}
+                        className="min-h-[44px] px-3 py-1.5 text-xs font-medium text-accent-700 bg-accent-50 hover:bg-accent-100 border border-accent-100 rounded-lg transition-colors inline-flex items-center gap-1 cursor-pointer"
+                      >
+                        Record movement
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -170,11 +186,23 @@ export default function ProductsTable({ initial }: ProductsTableProps) {
                     <span className="text-ink-500 text-xs block">Stock</span>
                     <span className="font-mono font-medium">{product.current_stock ?? 0}</span>
                   </div>
-                  <div className="text-right">
-                    <span className="text-ink-500 text-xs block">Sell Price</span>
-                    <span className="font-semibold text-ink-900">
-                      {formatCurrency(product.sell_price)}
-                    </span>
+                  <div className="flex items-center gap-3">
+                    <div className="text-right">
+                      <span className="text-ink-500 text-xs block">Sell Price</span>
+                      <span className="font-semibold text-ink-900">
+                        {formatCurrency(product.sell_price)}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setMovementProduct(product);
+                      }}
+                      className="min-h-[44px] px-3 py-1.5 text-xs font-medium text-accent-700 bg-accent-50 hover:bg-accent-100 border border-accent-100 rounded-lg transition-colors cursor-pointer"
+                    >
+                      Record movement
+                    </button>
                   </div>
                 </div>
               </div>
@@ -190,6 +218,17 @@ export default function ProductsTable({ initial }: ProductsTableProps) {
         product={selectedProduct}
         onSaveSuccess={handleSaveOrDelete}
       />
+
+      {/* Stock Movement Modal */}
+      {movementProduct && (
+        <StockMovementModal
+          product={movementProduct}
+          onClose={() => setMovementProduct(null)}
+          onSaved={() => {
+            handleSaveOrDelete();
+          }}
+        />
+      )}
     </div>
   );
 }
