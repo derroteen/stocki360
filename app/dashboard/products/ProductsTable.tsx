@@ -43,7 +43,7 @@ export default function ProductsTable({ initial }: ProductsTableProps) {
   return (
     <div className="w-full max-w-6xl mx-auto space-y-6">
       {/* Header section */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-cream-200 pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
         <div>
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold text-ink-900 font-serif">Products</h1>
@@ -67,7 +67,7 @@ export default function ProductsTable({ initial }: ProductsTableProps) {
 
       {/* Empty State */}
       {initial.length === 0 ? (
-        <div className="bg-cream-50 border border-cream-200 rounded-xl p-12 text-center space-y-4">
+        <div className="bg-surface border border-slate-200 rounded-xl p-12 text-center space-y-4">
           <div className="w-12 h-12 rounded-full bg-accent-50 text-accent-500 border border-accent-100 flex items-center justify-center mx-auto text-xl font-serif font-bold">
             P
           </div>
@@ -88,10 +88,10 @@ export default function ProductsTable({ initial }: ProductsTableProps) {
       ) : (
         <>
           {/* Desktop Table (screens >= 640px) */}
-          <div className="hidden sm:block overflow-hidden bg-cream-50 border border-cream-200 rounded-xl shadow-xs">
+          <div className="hidden sm:block overflow-hidden bg-surface border border-slate-200 rounded-xl shadow-xs">
             <table className="w-full text-left border-collapse text-sm">
               <thead>
-                <tr className="border-b border-cream-200 bg-cream-100 text-ink-700 font-medium">
+                <tr className="border-b border-slate-200 bg-surface text-ink-700 font-medium">
                   <th className="py-3.5 px-4">SKU</th>
                   <th className="py-3.5 px-4">Name</th>
                   <th className="py-3.5 px-4 text-right">Stock</th>
@@ -99,12 +99,12 @@ export default function ProductsTable({ initial }: ProductsTableProps) {
                   <th className="py-3.5 px-4 text-center">Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-cream-200 text-ink-900">
+              <tbody className="divide-y divide-slate-200 text-ink-900">
                 {initial.map((product) => (
                   <tr
                     key={product.id}
                     onClick={() => handleEditProduct(product)}
-                    className="cursor-pointer hover:bg-cream-100/60 transition-colors"
+                    className="cursor-pointer hover:bg-slate-100/60 transition-colors"
                   >
                     <td className="py-4 px-4 font-mono text-xs text-ink-700 font-medium">
                       {product.sku}
@@ -143,7 +143,7 @@ export default function ProductsTable({ initial }: ProductsTableProps) {
               <div
                 key={product.id}
                 onClick={() => handleEditProduct(product)}
-                className="bg-cream-50 border border-cream-200 rounded-xl p-4 cursor-pointer hover:border-accent-500/50 active:bg-cream-100 transition-all min-h-[44px] space-y-3"
+                className="bg-surface border border-slate-200 rounded-xl p-4 cursor-pointer hover:border-accent-500/50 active:bg-slate-100 transition-all min-h-[44px] space-y-3"
               >
                 <div className="flex items-start justify-between gap-2">
                   <div>
@@ -165,7 +165,7 @@ export default function ProductsTable({ initial }: ProductsTableProps) {
                   )}
                 </div>
 
-                <div className="flex items-center justify-between text-sm pt-2 border-t border-cream-200/60">
+                <div className="flex items-center justify-between text-sm pt-2 border-t border-slate-200/60">
                   <div className="text-ink-700">
                     <span className="text-ink-500 text-xs block">Stock</span>
                     <span className="font-mono font-medium">{product.current_stock ?? 0}</span>

@@ -70,9 +70,20 @@ export default function ProductModal({
           .eq('id', product.id);
         if (updateErr) throw updateErr;
       } else {
+        const { data: business, error: bizErr } = await supabase
+          .from('businesses')
+          .select('id')
+          .limit(1)
+          .single();
+
+        if (bizErr || !business) {
+          setError('No business found for this account');
+          return;
+        }
+
         const { error: insertErr } = await supabase
           .from('products')
-          .insert([payload]);
+          .insert([{ ...payload, business_id: business.id }]);
         if (insertErr) throw insertErr;
       }
 
@@ -113,8 +124,8 @@ export default function ProductModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink-900/50 backdrop-blur-xs">
-      <div className="w-full max-w-lg bg-cream-50 border border-cream-200 rounded-xl shadow-xl p-6 sm:p-8 space-y-6">
-        <div className="flex items-center justify-between border-b border-cream-200 pb-4">
+      <div className="w-full max-w-lg bg-surface border border-slate-200 rounded-xl shadow-xl p-6 sm:p-8 space-y-6">
+        <div className="flex items-center justify-between border-b border-slate-200 pb-4">
           <h2 className="text-xl font-bold text-ink-900 font-serif">
             {isEdit ? 'Edit Product' : 'Add Product'}
           </h2>
@@ -143,7 +154,7 @@ export default function ProductModal({
               required
               value={sku}
               onChange={(e) => setSku(e.target.value)}
-              className="w-full px-3 py-2 border border-cream-200 rounded-lg bg-cream-100 text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-white text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
               placeholder="e.g. PRD-001"
             />
           </div>
@@ -157,7 +168,7 @@ export default function ProductModal({
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full px-3 py-2 border border-cream-200 rounded-lg bg-cream-100 text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-white text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
               placeholder="Product Name"
             />
           </div>
@@ -173,7 +184,7 @@ export default function ProductModal({
                 required
                 value={costPrice}
                 onChange={(e) => setCostPrice(e.target.value)}
-                className="w-full px-3 py-2 border border-cream-200 rounded-lg bg-cream-100 text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-white text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
               />
             </div>
 
@@ -187,7 +198,7 @@ export default function ProductModal({
                 required
                 value={sellPrice}
                 onChange={(e) => setSellPrice(e.target.value)}
-                className="w-full px-3 py-2 border border-cream-200 rounded-lg bg-cream-100 text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-white text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
               />
             </div>
 
@@ -200,12 +211,12 @@ export default function ProductModal({
                 required
                 value={reorderLevel}
                 onChange={(e) => setReorderLevel(e.target.value)}
-                className="w-full px-3 py-2 border border-cream-200 rounded-lg bg-cream-100 text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-white text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
               />
             </div>
           </div>
 
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-cream-200">
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200">
             {isEdit && (
               <button
                 type="button"
@@ -221,7 +232,7 @@ export default function ProductModal({
               type="button"
               onClick={onClose}
               disabled={loading}
-              className="min-h-[44px] px-4 py-2 text-sm font-medium text-ink-700 bg-cream-200 hover:bg-cream-100 rounded-lg transition-colors"
+              className="min-h-[44px] px-4 py-2 text-sm font-medium text-ink-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
             >
               Cancel
             </button>
