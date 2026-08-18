@@ -26,9 +26,5 @@ export default async function ProductsPage() {
     console.error('Error loading products:', err);
   }
 
-  return (
-    <main className="p-4 sm:p-8 min-h-screen bg-white">
-      <ProductsTable initial={initialProducts} />
-    </main>
-  );
+  return <ProductsTable initial={initialProducts} />;
 }
