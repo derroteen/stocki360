@@ -34,28 +34,39 @@ export default async function ProductsPage() {
 
   const activeBusinessId = resolution.context.businessId;
 
-  let initialProducts: ProductStockLevel[] = [];
+  let activeProducts: ProductStockLevel[] = [];
+  let archivedProducts: ProductStockLevel[] = [];
 
   try {
-    const [{ data: stockLevels }, { data: activeProducts }] = await Promise.all([
+    const [{ data: stockLevels }, { data: productStates }] = await Promise.all([
       supabase
         .from('product_stock_levels')
         .select('*')
         .eq('business_id', activeBusinessId),
       supabase
         .from('products')
-        .select('id')
+        .select('id,is_active')
         .eq('business_id', activeBusinessId)
-        .eq('is_active', true),
     ]);
 
-    if (stockLevels) {
-      const activeIds = new Set((activeProducts ?? []).map((row: { id: string }) => row.id));
-      initialProducts = (stockLevels as ProductStockLevel[]).filter((p) => activeIds.has(p.id));
+    if (stockLevels && productStates) {
+      const activeIds = new Set(
+        (productStates as Array<{ id: string; is_active: boolean }>)
+          .filter((row) => row.is_active)
+          .map((row) => row.id)
+      );
+      const archivedIds = new Set(
+        (productStates as Array<{ id: string; is_active: boolean }>)
+          .filter((row) => !row.is_active)
+          .map((row) => row.id)
+      );
+
+      activeProducts = (stockLevels as ProductStockLevel[]).filter((p) => activeIds.has(p.id));
+      archivedProducts = (stockLevels as ProductStockLevel[]).filter((p) => archivedIds.has(p.id));
     }
   } catch (err) {
     console.error('Error loading products:', err);
   }
 
-  return <ProductsTable initial={initialProducts} />;
+  return <ProductsTable active={activeProducts} archived={archivedProducts} />;
 }

@@ -7,21 +7,31 @@ import ProductModal from './ProductModal';
 import StockMovementModal from './StockMovementModal';
 
 interface ProductsTableProps {
-  initial: ProductStockLevel[];
+  active: ProductStockLevel[];
+  archived: ProductStockLevel[];
 }
 
-export default function ProductsTable({ initial }: ProductsTableProps) {
+type ProductView = 'active' | 'archived';
+
+export default function ProductsTable({ active, archived }: ProductsTableProps) {
   const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<ProductStockLevel | null>(null);
   const [movementProduct, setMovementProduct] = useState<ProductStockLevel | null>(null);
+  const [view, setView] = useState<ProductView>('active');
+  const [restoreLoadingId, setRestoreLoadingId] = useState<string | null>(null);
+  const [restoreError, setRestoreError] = useState<string | null>(null);
+
+  const products = view === 'active' ? active : archived;
 
   const handleAddProduct = () => {
+    setRestoreError(null);
     setSelectedProduct(null);
     setIsModalOpen(true);
   };
 
   const handleEditProduct = (product: ProductStockLevel) => {
+    setRestoreError(null);
     setSelectedProduct(product);
     setIsModalOpen(true);
   };
@@ -32,7 +42,34 @@ export default function ProductsTable({ initial }: ProductsTableProps) {
   };
 
   const handleSaveOrDelete = () => {
+    setRestoreError(null);
     router.refresh();
+  };
+
+  const handleRestore = async (productId: string) => {
+    if (restoreLoadingId) {
+      return;
+    }
+
+    setRestoreError(null);
+    setRestoreLoadingId(productId);
+
+    try {
+      const response = await fetch(`/api/products/${productId}`, {
+        method: 'PUT',
+      });
+
+      if (!response.ok) {
+        const body = (await response.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(body?.error ?? 'Unable to restore product.');
+      }
+
+      router.refresh();
+    } catch (error: any) {
+      setRestoreError(error?.message ?? 'Unable to restore product.');
+    } finally {
+      setRestoreLoadingId(null);
+    }
   };
 
   const formatCurrency = (amount: number) => {
@@ -51,7 +88,7 @@ export default function ProductsTable({ initial }: ProductsTableProps) {
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold text-ink-900 font-serif">Products</h1>
             <span className="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-accent-50 text-accent-700 border border-accent-100">
-              {initial.length} {initial.length === 1 ? 'product' : 'products'}
+              {products.length} {products.length === 1 ? 'product' : 'products'}
             </span>
           </div>
           <p className="text-sm text-ink-500 mt-1">
@@ -59,34 +96,85 @@ export default function ProductsTable({ initial }: ProductsTableProps) {
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={handleAddProduct}
-          className="min-h-[44px] px-4 py-2 inline-flex items-center justify-center gap-2 bg-accent-500 hover:bg-accent-600 text-white rounded-lg font-medium shadow-sm transition-colors text-sm"
-        >
-          <span className="text-lg leading-none">+</span> Add product
-        </button>
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+          <div className="inline-flex items-center p-1 bg-slate-100/80 rounded-full border border-slate-200/80 text-xs sm:text-sm font-medium">
+            <button
+              type="button"
+              onClick={() => {
+                setView('active');
+                setRestoreError(null);
+              }}
+              className={`px-3 sm:px-4 py-1.5 rounded-full transition-colors ${
+                view === 'active'
+                  ? 'bg-accent-50 text-accent-700 font-semibold border border-accent-100 shadow-2xs'
+                  : 'text-ink-500 hover:text-ink-900'
+              }`}
+            >
+              Active
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setView('archived');
+                setRestoreError(null);
+              }}
+              className={`px-3 sm:px-4 py-1.5 rounded-full transition-colors ${
+                view === 'archived'
+                  ? 'bg-accent-50 text-accent-700 font-semibold border border-accent-100 shadow-2xs'
+                  : 'text-ink-500 hover:text-ink-900'
+              }`}
+            >
+              Archived
+            </button>
+          </div>
+
+          {view === 'active' ? (
+            <button
+              type="button"
+              onClick={handleAddProduct}
+              className="min-h-[44px] px-4 py-2 inline-flex items-center justify-center gap-2 bg-accent-500 hover:bg-accent-600 text-white rounded-lg font-medium shadow-sm transition-colors text-sm"
+            >
+              <span className="text-lg leading-none">+</span> Add product
+            </button>
+          ) : null}
+        </div>
       </div>
 
+      {restoreError ? (
+        <div className="p-3 text-sm text-warn-700 bg-warn-100 border border-warn-600/30 rounded-lg">
+          {restoreError}
+        </div>
+      ) : null}
+
       {/* Empty State */}
-      {initial.length === 0 ? (
+      {products.length === 0 ? (
         <div className="bg-surface border border-slate-200 rounded-xl p-12 text-center space-y-4">
           <div className="w-12 h-12 rounded-full bg-accent-50 text-accent-500 border border-accent-100 flex items-center justify-center mx-auto text-xl font-serif font-bold">
             P
           </div>
           <div className="space-y-1">
-            <h3 className="text-lg font-semibold text-ink-900 font-serif">No products found</h3>
-            <p className="text-sm text-ink-500 max-w-sm mx-auto">
-              Your inventory is empty. Start adding products to track stock levels and prices.
-            </p>
+            <h3 className="text-lg font-semibold text-ink-900 font-serif">
+              {view === 'active' ? 'No products found' : 'No archived products'}
+            </h3>
+            {view === 'active' ? (
+              <p className="text-sm text-ink-500 max-w-sm mx-auto">
+                Your inventory is empty. Start adding products to track stock levels and prices.
+              </p>
+            ) : (
+              <p className="text-sm text-ink-500 max-w-sm mx-auto">
+                Archived products will appear here and can be restored when needed.
+              </p>
+            )}
           </div>
-          <button
-            type="button"
-            onClick={handleAddProduct}
-            className="min-h-[44px] px-5 py-2.5 inline-flex items-center justify-center gap-2 bg-accent-500 hover:bg-accent-600 text-white rounded-lg font-medium shadow-sm transition-colors text-sm"
-          >
-            <span className="text-lg leading-none">+</span> Add product
-          </button>
+          {view === 'active' ? (
+            <button
+              type="button"
+              onClick={handleAddProduct}
+              className="min-h-[44px] px-5 py-2.5 inline-flex items-center justify-center gap-2 bg-accent-500 hover:bg-accent-600 text-white rounded-lg font-medium shadow-sm transition-colors text-sm"
+            >
+              <span className="text-lg leading-none">+</span> Add product
+            </button>
+          ) : null}
         </div>
       ) : (
         <>
@@ -104,11 +192,15 @@ export default function ProductsTable({ initial }: ProductsTableProps) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 text-ink-900">
-                {initial.map((product) => (
+                {products.map((product) => (
                   <tr
                     key={product.id}
-                    onClick={() => handleEditProduct(product)}
-                    className="cursor-pointer hover:bg-slate-100/60 transition-colors"
+                    onClick={view === 'active' ? () => handleEditProduct(product) : undefined}
+                    className={
+                      view === 'active'
+                        ? 'cursor-pointer hover:bg-slate-100/60 transition-colors'
+                        : 'transition-colors'
+                    }
                   >
                     <td className="py-4 px-4 font-mono text-xs text-ink-700 font-medium">
                       {product.sku}
@@ -136,16 +228,27 @@ export default function ProductsTable({ initial }: ProductsTableProps) {
                       )}
                     </td>
                     <td className="py-4 px-4 text-right">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setMovementProduct(product);
-                        }}
-                        className="min-h-[44px] px-3 py-1.5 text-xs font-medium text-accent-700 bg-accent-50 hover:bg-accent-100 border border-accent-100 rounded-lg transition-colors inline-flex items-center gap-1 cursor-pointer"
-                      >
-                        Record movement
-                      </button>
+                      {view === 'active' ? (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setMovementProduct(product);
+                          }}
+                          className="min-h-[44px] px-3 py-1.5 text-xs font-medium text-accent-700 bg-accent-50 hover:bg-accent-100 border border-accent-100 rounded-lg transition-colors inline-flex items-center gap-1 cursor-pointer"
+                        >
+                          Record movement
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => handleRestore(product.id)}
+                          disabled={restoreLoadingId === product.id}
+                          className="min-h-[44px] px-3 py-1.5 text-xs font-medium text-good-700 bg-good-100 hover:bg-good-200 border border-good-600/30 rounded-lg transition-colors inline-flex items-center gap-1 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {restoreLoadingId === product.id ? 'Restoring...' : 'Restore'}
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -155,11 +258,15 @@ export default function ProductsTable({ initial }: ProductsTableProps) {
 
           {/* Stacked Card Layout (screens < 640px) */}
           <div className="block sm:hidden space-y-3">
-            {initial.map((product) => (
+            {products.map((product) => (
               <div
                 key={product.id}
-                onClick={() => handleEditProduct(product)}
-                className="bg-surface border border-slate-200 rounded-xl p-4 cursor-pointer hover:border-accent-500/50 active:bg-slate-100 transition-all min-h-[44px] space-y-3"
+                onClick={view === 'active' ? () => handleEditProduct(product) : undefined}
+                className={`bg-surface border border-slate-200 rounded-xl p-4 min-h-[44px] space-y-3 ${
+                  view === 'active'
+                    ? 'cursor-pointer hover:border-accent-500/50 active:bg-slate-100 transition-all'
+                    : ''
+                }`}
               >
                 <div className="flex items-start justify-between gap-2">
                   <div>
@@ -193,16 +300,30 @@ export default function ProductsTable({ initial }: ProductsTableProps) {
                         {formatCurrency(product.sell_price)}
                       </span>
                     </div>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setMovementProduct(product);
-                      }}
-                      className="min-h-[44px] px-3 py-1.5 text-xs font-medium text-accent-700 bg-accent-50 hover:bg-accent-100 border border-accent-100 rounded-lg transition-colors cursor-pointer"
-                    >
-                      Record movement
-                    </button>
+                    {view === 'active' ? (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setMovementProduct(product);
+                        }}
+                        className="min-h-[44px] px-3 py-1.5 text-xs font-medium text-accent-700 bg-accent-50 hover:bg-accent-100 border border-accent-100 rounded-lg transition-colors cursor-pointer"
+                      >
+                        Record movement
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRestore(product.id);
+                        }}
+                        disabled={restoreLoadingId === product.id}
+                        className="min-h-[44px] px-3 py-1.5 text-xs font-medium text-good-700 bg-good-100 hover:bg-good-200 border border-good-600/30 rounded-lg transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {restoreLoadingId === product.id ? 'Restoring...' : 'Restore'}
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -220,7 +341,7 @@ export default function ProductsTable({ initial }: ProductsTableProps) {
       />
 
       {/* Stock Movement Modal */}
-      {movementProduct && (
+      {view === 'active' && movementProduct && (
         <StockMovementModal
           product={movementProduct}
           onClose={() => setMovementProduct(null)}

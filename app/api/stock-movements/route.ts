@@ -29,13 +29,18 @@ export async function POST(request: NextRequest) {
 
   const { data: product, error: productErr } = await supabase
     .from('products')
-    .select('id,business_id')
+    // Archived products are read-only history and cannot receive new stock movements.
+    .select('id,business_id,is_active')
     .eq('id', productId)
     .eq('business_id', resolution.context.businessId)
     .single();
 
   if (productErr || !product) {
     return NextResponse.json({ error: 'Product not found for active business.' }, { status: 404 });
+  }
+
+  if (!product.is_active) {
+    return NextResponse.json({ error: 'Archived products cannot receive new stock movements.' }, { status: 400 });
   }
 
   const { error: insertErr } = await supabase

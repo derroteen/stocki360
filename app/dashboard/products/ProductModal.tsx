@@ -53,12 +53,13 @@ export default function ProductModal({
     setError(null);
 
     try {
+      // Send raw form values so the API remains the single source of truth for validation.
       const payload = {
         sku,
         name,
-        cost_price: parseFloat(costPrice) || 0,
-        sell_price: parseFloat(sellPrice) || 0,
-        reorder_level: parseInt(reorderLevel, 10) || 0,
+        cost_price: costPrice,
+        sell_price: sellPrice,
+        reorder_level: reorderLevel,
       };
 
       const endpoint = isEdit && product?.id ? `/api/products/${product.id}` : '/api/products';
@@ -73,8 +74,8 @@ export default function ProductModal({
       });
 
       if (!response.ok) {
-        const body = await response.json().catch(() => null);
-        throw new Error(body?.error || 'An error occurred while saving the product');
+        const body = (await response.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(body?.error ?? 'An error occurred while saving the product');
       } else {
         router.refresh();
         if (onSaveSuccess) onSaveSuccess();
@@ -100,8 +101,8 @@ export default function ProductModal({
       });
 
       if (!response.ok) {
-        const body = await response.json().catch(() => null);
-        throw new Error(body?.error || 'An error occurred while archiving the product');
+        const body = (await response.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(body?.error ?? 'An error occurred while archiving the product');
       }
 
       router.refresh();
