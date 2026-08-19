@@ -21,15 +21,31 @@ export default function StockMovementModal({
   const [note, setNote] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [submissionKey, setSubmissionKey] = useState<string | null>(null);
 
   const numQty = parseInt(quantity, 10) || 0;
   const currentStock = product.current_stock ?? 0;
   const showNegativeWarning = movementType === 'out' && numQty > currentStock;
 
+  const resetSubmissionKey = () => {
+    setSubmissionKey(null);
+  };
+
+  const handleClose = () => {
+    resetSubmissionKey();
+    onClose();
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+
+    // Reuse the same key for retries of the same logical submission.
+    const key = submissionKey ?? crypto.randomUUID();
+    if (!submissionKey) {
+      setSubmissionKey(key);
+    }
 
     try {
       const response = await fetch('/api/stock-movements', {
@@ -42,6 +58,7 @@ export default function StockMovementModal({
           movementType,
           quantity: numQty,
           note: note.trim() || null,
+          idempotencyKey: key,
         }),
       });
 
@@ -51,6 +68,7 @@ export default function StockMovementModal({
       }
 
       onSaved();
+      resetSubmissionKey();
       onClose();
     } catch (err: any) {
       setError(err.message || 'An error occurred while recording stock movement');
@@ -74,7 +92,7 @@ export default function StockMovementModal({
           </div>
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             className="min-h-[44px] min-w-[44px] flex items-center justify-center text-ink-500 hover:text-ink-900 transition-colors cursor-pointer"
           >
             ✕
@@ -96,7 +114,10 @@ export default function StockMovementModal({
             <div className="grid grid-cols-3 gap-2">
               <button
                 type="button"
-                onClick={() => setMovementType('in')}
+                onClick={() => {
+                  setMovementType('in');
+                  resetSubmissionKey();
+                }}
                 className={`min-h-[44px] px-3 py-2 text-sm font-medium rounded-lg transition-colors cursor-pointer border ${
                   movementType === 'in'
                     ? 'bg-accent-500 text-white border-accent-500 shadow-xs'
@@ -107,7 +128,10 @@ export default function StockMovementModal({
               </button>
               <button
                 type="button"
-                onClick={() => setMovementType('out')}
+                onClick={() => {
+                  setMovementType('out');
+                  resetSubmissionKey();
+                }}
                 className={`min-h-[44px] px-3 py-2 text-sm font-medium rounded-lg transition-colors cursor-pointer border ${
                   movementType === 'out'
                     ? 'bg-accent-500 text-white border-accent-500 shadow-xs'
@@ -118,7 +142,10 @@ export default function StockMovementModal({
               </button>
               <button
                 type="button"
-                onClick={() => setMovementType('adjustment')}
+                onClick={() => {
+                  setMovementType('adjustment');
+                  resetSubmissionKey();
+                }}
                 className={`min-h-[44px] px-3 py-2 text-sm font-medium rounded-lg transition-colors cursor-pointer border ${
                   movementType === 'adjustment'
                     ? 'bg-accent-500 text-white border-accent-500 shadow-xs'
@@ -141,7 +168,10 @@ export default function StockMovementModal({
               min="1"
               required
               value={quantity}
-              onChange={(e) => setQuantity(e.target.value)}
+              onChange={(e) => {
+                setQuantity(e.target.value);
+                resetSubmissionKey();
+              }}
               className="w-full min-h-[44px] px-3 py-2 border border-slate-200 rounded-lg bg-white text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
             />
           </div>
@@ -163,7 +193,10 @@ export default function StockMovementModal({
               id="note"
               type="text"
               value={note}
-              onChange={(e) => setNote(e.target.value)}
+              onChange={(e) => {
+                setNote(e.target.value);
+                resetSubmissionKey();
+              }}
               className="w-full min-h-[44px] px-3 py-2 border border-slate-200 rounded-lg bg-white text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
               placeholder="e.g. Restock from supplier, Damaged goods"
             />
@@ -173,7 +206,7 @@ export default function StockMovementModal({
           <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200">
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleClose}
               disabled={loading}
               className="min-h-[44px] px-4 py-2 text-sm font-medium text-ink-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer"
             >
