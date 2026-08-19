@@ -6,6 +6,7 @@ export interface ProductRow {
   cost_price: number;
   sell_price: number;
   reorder_level: number;
+  is_active?: boolean;
   created_at: string;
 }
 

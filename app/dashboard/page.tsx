@@ -3,25 +3,46 @@ import { redirect } from 'next/navigation';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { ProductStockLevel } from '@/lib/supabase/types';
 import OverviewChart from './OverviewChart';
+import { resolveActiveBusinessContext } from '@/lib/supabase/business-context';
 
 export const dynamic = 'force-dynamic';
 
 export default async function DashboardOverviewPage() {
   const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const resolution = await resolveActiveBusinessContext(supabase);
 
-  if (!user) {
+  if (!resolution.context && resolution.memberships.length === 0) {
     redirect('/login');
   }
+
+  if (!resolution.context && resolution.needsSelection) {
+    redirect('/dashboard/select-business');
+  }
+
+  if (!resolution.context) {
+    redirect('/login');
+  }
+
+  const activeBusinessId = resolution.context.businessId;
 
   let products: ProductStockLevel[] = [];
 
   try {
-    const { data } = await supabase.from('product_stock_levels').select('*');
-    if (data) {
-      products = data as ProductStockLevel[];
+    const [{ data: stockLevels }, { data: activeProducts }] = await Promise.all([
+      supabase
+        .from('product_stock_levels')
+        .select('*')
+        .eq('business_id', activeBusinessId),
+      supabase
+        .from('products')
+        .select('id')
+        .eq('business_id', activeBusinessId)
+        .eq('is_active', true),
+    ]);
+
+    if (stockLevels) {
+      const activeIds = new Set((activeProducts ?? []).map((row: { id: string }) => row.id));
+      products = (stockLevels as ProductStockLevel[]).filter((p) => activeIds.has(p.id));
     }
   } catch (err) {
     console.error('Error fetching dashboard stock levels:', err);

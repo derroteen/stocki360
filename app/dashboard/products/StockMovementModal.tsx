@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { ProductStockLevel } from '@/lib/supabase/types';
-import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 
 interface StockMovementModalProps {
   product: ProductStockLevel;
@@ -33,19 +32,23 @@ export default function StockMovementModal({
     setError(null);
 
     try {
-      const supabase = createSupabaseBrowserClient();
-      const { error: insertErr } = await supabase
-        .from('stock_movements')
-        .insert([
-          {
-            product_id: product.id,
-            movement_type: movementType,
-            quantity: numQty,
-            note: note.trim() || null,
-          },
-        ]);
+      const response = await fetch('/api/stock-movements', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          productId: product.id,
+          movementType,
+          quantity: numQty,
+          note: note.trim() || null,
+        }),
+      });
 
-      if (insertErr) throw insertErr;
+      if (!response.ok) {
+        const body = await response.json().catch(() => null);
+        throw new Error(body?.error || 'An error occurred while recording stock movement');
+      }
 
       onSaved();
       onClose();

@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ProductStockLevel } from '@/lib/supabase/types';
-import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 
 interface ProductModalProps {
   isOpen: boolean;
@@ -54,7 +53,6 @@ export default function ProductModal({
     setError(null);
 
     try {
-      const supabase = createSupabaseBrowserClient();
       const payload = {
         sku,
         name,
@@ -63,33 +61,25 @@ export default function ProductModal({
         reorder_level: parseInt(reorderLevel, 10) || 0,
       };
 
-      if (isEdit && product?.id) {
-        const { error: updateErr } = await supabase
-          .from('products')
-          .update(payload)
-          .eq('id', product.id);
-        if (updateErr) throw updateErr;
+      const endpoint = isEdit && product?.id ? `/api/products/${product.id}` : '/api/products';
+      const method = isEdit && product?.id ? 'PATCH' : 'POST';
+
+      const response = await fetch(endpoint, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const body = await response.json().catch(() => null);
+        throw new Error(body?.error || 'An error occurred while saving the product');
       } else {
-        const { data: business, error: bizErr } = await supabase
-          .from('businesses')
-          .select('id')
-          .limit(1)
-          .single();
-
-        if (bizErr || !business) {
-          setError('No business found for this account');
-          return;
-        }
-
-        const { error: insertErr } = await supabase
-          .from('products')
-          .insert([{ ...payload, business_id: business.id }]);
-        if (insertErr) throw insertErr;
+        router.refresh();
+        if (onSaveSuccess) onSaveSuccess();
+        onClose();
       }
-
-      router.refresh();
-      if (onSaveSuccess) onSaveSuccess();
-      onClose();
     } catch (err: any) {
       setError(err.message || 'An error occurred while saving the product');
     } finally {
@@ -99,24 +89,26 @@ export default function ProductModal({
 
   const handleDelete = async () => {
     if (!product?.id) return;
-    if (!confirm('Are you sure you want to delete this product?')) return;
+    if (!confirm('Are you sure you want to archive this product?')) return;
 
     setLoading(true);
     setError(null);
 
     try {
-      const supabase = createSupabaseBrowserClient();
-      const { error: deleteErr } = await supabase
-        .from('products')
-        .delete()
-        .eq('id', product.id);
-      if (deleteErr) throw deleteErr;
+      const response = await fetch(`/api/products/${product.id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const body = await response.json().catch(() => null);
+        throw new Error(body?.error || 'An error occurred while archiving the product');
+      }
 
       router.refresh();
       if (onSaveSuccess) onSaveSuccess();
       onClose();
     } catch (err: any) {
-      setError(err.message || 'An error occurred while deleting the product');
+      setError(err.message || 'An error occurred while archiving the product');
     } finally {
       setLoading(false);
     }
@@ -224,7 +216,7 @@ export default function ProductModal({
                 disabled={loading}
                 className="min-h-[44px] px-4 py-2 text-sm font-medium text-warn-700 bg-warn-100 hover:bg-warn-600 hover:text-white rounded-lg transition-colors mr-auto"
               >
-                Delete
+                Archive
               </button>
             )}
 
