@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { resolveActiveBusinessContext } from '@/lib/supabase/business-context';
+import CreateBusinessOnboarding from './CreateBusinessOnboarding';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,23 +11,7 @@ export default async function SelectBusinessPage() {
   const resolution = await resolveActiveBusinessContext(supabase);
 
   if (!resolution.context && resolution.memberships.length === 0) {
-    return (
-      <div className="min-h-screen bg-white text-ink-900 flex items-center justify-center px-4">
-        <div className="w-full max-w-lg rounded-xl border border-slate-200 bg-surface p-6 sm:p-8 shadow-2xs space-y-3">
-          <h1 className="font-serif text-2xl font-bold text-ink-900">No business access yet</h1>
-          <p className="text-sm text-ink-600">
-            Your account is authenticated but does not have an active business membership.
-            Ask an owner or admin to grant access.
-          </p>
-          <Link
-            href="/login"
-            className="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-slate-300 px-4 text-sm font-medium text-ink-700 hover:bg-slate-50"
-          >
-            Back to Login
-          </Link>
-        </div>
-      </div>
-    );
+    return <CreateBusinessOnboarding />;
   }
 
   if (resolution.context) {
