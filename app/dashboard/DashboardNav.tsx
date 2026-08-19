@@ -1,17 +1,98 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { useEffect, useMemo, useState } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import type { User } from '@supabase/supabase-js';
+import { createSupabaseBrowserClient } from '@/lib/supabase/client';
+
+function toInitial(value: string | null | undefined): string | null {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed.charAt(0).toUpperCase() : null;
+}
+
+function resolveAvatarInitial(user: User | null): string {
+  const metadata = user?.user_metadata as Record<string, unknown> | undefined;
+  const displayName =
+    typeof metadata?.display_name === 'string'
+      ? metadata.display_name
+      : typeof metadata?.full_name === 'string'
+      ? metadata.full_name
+      : typeof metadata?.name === 'string'
+      ? metadata.name
+      : null;
+
+  // Fallback order: display name initial, then email initial, then a stable default.
+  return toInitial(displayName) ?? toInitial(user?.email) ?? 'U';
+}
 
 export default function DashboardNav() {
+  const router = useRouter();
   const pathname = usePathname();
+  const supabase = useMemo(() => createSupabaseBrowserClient(), []);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [logoutError, setLogoutError] = useState<string | null>(null);
+  const [avatarInitial, setAvatarInitial] = useState('U');
 
   const isDashboardActive = pathname === '/dashboard';
   const isProductsActive = pathname.startsWith('/dashboard/products');
 
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadUserInitial = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!isMounted) {
+        return;
+      }
+
+      setAvatarInitial(resolveAvatarInitial(user));
+    };
+
+    loadUserInitial();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setAvatarInitial(resolveAvatarInitial(session?.user ?? null));
+    });
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
+  }, [supabase]);
+
+  const handleLogout = async () => {
+    if (isLoggingOut) {
+      return;
+    }
+
+    setLogoutError(null);
+    setIsLoggingOut(true);
+
+    // Sign out with Supabase to clear the authenticated session for this browser.
+    const { error } = await supabase.auth.signOut();
+
+    if (error) {
+      setLogoutError(error.message || 'Unable to log out. Please try again.');
+      setIsLoggingOut(false);
+      return;
+    }
+
+    setAvatarInitial('U');
+
+    // Refresh auth-sensitive server components after redirecting to the login page.
+    router.replace('/login');
+    router.refresh();
+  };
+
   return (
     <header className="sticky top-0 z-40 bg-white border-b border-slate-200 shadow-2xs">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-2 sm:gap-4">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-2 sm:py-3 flex items-center justify-between gap-2 sm:gap-4">
         {/* Brand */}
         <Link href="/dashboard" className="flex items-center gap-2">
           <span className="text-lg sm:text-xl font-bold font-serif text-accent-600 tracking-tight">
@@ -43,13 +124,26 @@ export default function DashboardNav() {
           </Link>
         </nav>
 
-        {/* User Icon Circle */}
-        <div className="flex items-center">
+        {/* User controls */}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleLogout}
+            disabled={isLoggingOut}
+            className="min-h-[36px] px-3 rounded-lg border border-slate-300 text-xs sm:text-sm font-medium text-ink-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isLoggingOut ? 'Logging out...' : 'Log out'}
+          </button>
           <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-accent-50 text-accent-700 border border-accent-100 flex items-center justify-center font-bold text-xs sm:text-sm font-serif shadow-2xs">
-            U
+            {avatarInitial}
           </div>
         </div>
       </div>
+      {logoutError ? (
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 pb-2">
+          <p className="text-xs sm:text-sm text-warn-700">{logoutError}</p>
+        </div>
+      ) : null}
     </header>
   );
 }

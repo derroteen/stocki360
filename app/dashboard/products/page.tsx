@@ -8,10 +8,20 @@ export const dynamic = 'force-dynamic';
 
 export default async function ProductsPage() {
   const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  // Check authentication first so logged-out users are not misclassified as zero-membership users.
+  if (!user) {
+    redirect('/login');
+  }
+
   const resolution = await resolveActiveBusinessContext(supabase);
 
   if (!resolution.context && resolution.memberships.length === 0) {
-    redirect('/login');
+    // Authenticated users with no memberships should be sent to business onboarding.
+    redirect('/dashboard/select-business');
   }
 
   if (!resolution.context && resolution.needsSelection) {

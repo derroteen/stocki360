@@ -53,7 +53,7 @@ export default function LoginPage() {
         if (signUpError) {
           setError(signUpError.message);
         } else if (data.session) {
-          router.push('/dashboard/products');
+          router.push('/dashboard');
           router.refresh();
         } else if (data.user) {
           setMessage('Account created! Please check your email to confirm your account, or sign in.');
@@ -67,7 +67,7 @@ export default function LoginPage() {
         if (signInError) {
           setError(signInError.message);
         } else {
-          router.push('/dashboard/products');
+          router.push('/dashboard');
           router.refresh();
         }
       }
