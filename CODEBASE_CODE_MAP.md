@@ -57,10 +57,17 @@ This document explains what key files and modules do without changing source cod
 
 ## Database Migrations
 
-- `supabase/migrations/20260819_phase1_tenancy_foundation.sql`:
+- `supabase/migrations/20260818_phase1_tenancy_foundation.sql`:
   - Creates `business_memberships`.
   - Adds `products.is_active`.
   - Enables and defines foundational RLS policies/functions.
+  - Renamed from `20260819_phase1_tenancy_foundation.sql` (SQL content unchanged) because it originally
+    shared the `20260819` version with `phase1_security_fixes.sql`, which broke `schema_migrations`
+    on fresh applies (e.g. Supabase Preview) and does not reflect that this migration must run first
+    since `phase1_security_fixes.sql`'s functions depend on `business_memberships`. Production already
+    recorded `20260819` as `phase1_security_fixes` and already has this migration's objects applied, so
+    production history must be reconciled to mark `20260818_phase1_tenancy_foundation` as applied
+    without re-executing its SQL.
 
 - `supabase/migrations/20260819_phase1_security_fixes.sql`:
   - Recreates `product_stock_levels` view with `security_invoker = true`.
