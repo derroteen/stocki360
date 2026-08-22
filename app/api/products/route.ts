@@ -10,6 +10,9 @@ type ProductPayload = {
   reorder_level: number;
   category_id?: string | null;
   supplier_id?: string | null;
+  stock_unit: string;
+  package_unit?: string | null;
+  units_per_package?: number | null;
 };
 
 function toNonEmptyTrimmedString(value: unknown): string | null {
@@ -69,6 +72,15 @@ function validateProductInput(body: unknown): ProductPayload {
     throw new Error('Product name is required.');
   }
 
+  const packageUnit = toNonEmptyTrimmedString(record.package_unit);
+  let unitsPerPackage: number | null = null;
+  if (packageUnit) {
+    unitsPerPackage = toValidNonNegativeInteger(record.units_per_package, 'Units per package');
+    if (unitsPerPackage <= 0) {
+      throw new Error('Units per package must be greater than 0.');
+    }
+  }
+
   return {
     sku,
     name,
@@ -77,6 +89,9 @@ function validateProductInput(body: unknown): ProductPayload {
     reorder_level: toValidNonNegativeInteger(record.reorder_level, 'Reorder level'),
     category_id: toNonEmptyTrimmedString(record.category_id),
     supplier_id: toNonEmptyTrimmedString(record.supplier_id),
+    stock_unit: toNonEmptyTrimmedString(record.stock_unit) || 'unit',
+    package_unit: packageUnit,
+    units_per_package: unitsPerPackage,
   };
 }
 

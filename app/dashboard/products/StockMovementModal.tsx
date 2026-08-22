@@ -22,6 +22,7 @@ export default function StockMovementModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submissionKey, setSubmissionKey] = useState<string | null>(null);
+  const [receiveAsPackage, setReceiveAsPackage] = useState(false);
 
   const numQty = parseInt(quantity, 10) || 0;
   const currentStock = product.current_stock ?? 0;
@@ -47,6 +48,17 @@ export default function StockMovementModal({
       setSubmissionKey(key);
     }
 
+    // Calculate actual stock quantity based on packaging
+    const isBulkReceipt = movementType === 'in' && receiveAsPackage && product.package_unit && product.units_per_package;
+    const actualQuantity = isBulkReceipt ? numQty * (product.units_per_package || 1) : numQty;
+
+    // Update note if bulk receipt
+    let finalNote = note.trim();
+    if (isBulkReceipt) {
+      const packageText = `Received ${numQty} ${product.package_unit}s (${product.units_per_package} ${product.stock_unit || 'unit'}s/${product.package_unit})`;
+      finalNote = finalNote ? `${packageText}. ${finalNote}` : packageText;
+    }
+
     try {
       const response = await fetch('/api/stock-movements', {
         method: 'POST',
@@ -56,8 +68,8 @@ export default function StockMovementModal({
         body: JSON.stringify({
           productId: product.id,
           movementType,
-          quantity: numQty,
-          note: note.trim() || null,
+          quantity: actualQuantity,
+          note: finalNote || null,
           idempotencyKey: key,
         }),
       });
@@ -157,10 +169,51 @@ export default function StockMovementModal({
             </div>
           </div>
 
+          {/* Packaging Selector (Only for IN movements if product has packaging) */}
+          {movementType === 'in' && product.package_unit && product.units_per_package && (
+            <div>
+              <label className="block text-sm font-medium text-ink-700 mb-2">
+                Receive stock as:
+              </label>
+              <div className="flex items-center gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="receiveMode"
+                    checked={!receiveAsPackage}
+                    onChange={() => {
+                      setReceiveAsPackage(false);
+                      resetSubmissionKey();
+                    }}
+                    className="text-accent-600 focus:ring-accent-500 w-4 h-4"
+                  />
+                  <span className="text-sm text-ink-700">
+                    Individual {product.stock_unit || 'unit'}s
+                  </span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="receiveMode"
+                    checked={receiveAsPackage}
+                    onChange={() => {
+                      setReceiveAsPackage(true);
+                      resetSubmissionKey();
+                    }}
+                    className="text-accent-600 focus:ring-accent-500 w-4 h-4"
+                  />
+                  <span className="text-sm text-ink-700">
+                    Bulk {product.package_unit}s
+                  </span>
+                </label>
+              </div>
+            </div>
+          )}
+
           {/* Quantity Input */}
           <div>
             <label className="block text-sm font-medium text-ink-700 mb-1" htmlFor="quantity">
-              Quantity
+              Quantity {receiveAsPackage && movementType === 'in' ? `(in ${product.package_unit}s)` : `(in ${product.stock_unit || 'unit'}s)`}
             </label>
             <input
               id="quantity"
@@ -174,6 +227,11 @@ export default function StockMovementModal({
               }}
               className="w-full min-h-[44px] px-3 py-2 border border-slate-200 rounded-lg bg-white text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
             />
+            {receiveAsPackage && movementType === 'in' && product.units_per_package && numQty > 0 && (
+              <p className="mt-2 text-sm text-ink-600 bg-slate-50 p-2 rounded border border-slate-100">
+                Stock added: <strong>{numQty * product.units_per_package} {product.stock_unit || 'unit'}s</strong>
+              </p>
+            )}
           </div>
 
           {/* Inline Warning for Stock Out below zero */}

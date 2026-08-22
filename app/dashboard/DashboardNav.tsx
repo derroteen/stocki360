@@ -33,6 +33,7 @@ export default function DashboardNav() {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [logoutError, setLogoutError] = useState<string | null>(null);
   const [avatarInitial, setAvatarInitial] = useState('U');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const isDashboardActive = pathname === '/dashboard';
   const isProductsActive = pathname.startsWith('/dashboard/products');
@@ -103,8 +104,8 @@ export default function DashboardNav() {
           </span>
         </Link>
 
-        {/* Navigation Pills */}
-        <nav className="flex items-center p-1 bg-slate-100/80 rounded-full border border-slate-200/80 text-xs sm:text-sm font-medium">
+        {/* Desktop Navigation Pills */}
+        <nav className="hidden md:flex items-center p-1 bg-slate-100/80 rounded-full border border-slate-200/80 text-xs sm:text-sm font-medium">
           <Link
             href="/dashboard"
             className={`px-3 sm:px-4 py-1.5 rounded-full transition-colors ${
@@ -157,8 +158,8 @@ export default function DashboardNav() {
           </Link>
         </nav>
 
-        {/* User controls */}
-        <div className="flex items-center gap-2">
+        {/* Desktop User controls */}
+        <div className="hidden md:flex items-center gap-2">
           <button
             type="button"
             onClick={handleLogout}
@@ -171,7 +172,123 @@ export default function DashboardNav() {
             {avatarInitial}
           </div>
         </div>
+
+        {/* Mobile Hamburger Button */}
+        <button
+          type="button"
+          onClick={() => setIsMobileMenuOpen(true)}
+          className="md:hidden p-2 text-ink-600 hover:text-ink-900 transition-colors -mr-2"
+          aria-label="Open menu"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
       </div>
+
+      {/* Mobile Menu Overlay */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden fixed inset-0 z-50 bg-white flex flex-col">
+          <div className="px-4 py-3 flex items-center justify-between border-b border-slate-200">
+            <span className="text-lg font-bold font-serif text-accent-600 tracking-tight">
+              Stocki360
+            </span>
+            <button
+              type="button"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="p-2 text-ink-600 hover:text-ink-900 transition-colors -mr-2"
+              aria-label="Close menu"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          
+          <div className="flex-1 overflow-y-auto px-4 py-6 space-y-6">
+            <nav className="flex flex-col gap-2">
+              <Link
+                href="/dashboard"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={`px-4 py-3 rounded-xl font-medium transition-colors ${
+                  isDashboardActive
+                    ? 'bg-accent-50 text-accent-700'
+                    : 'text-ink-600 active:bg-slate-50'
+                }`}
+              >
+                Dashboard
+              </Link>
+              <Link
+                href="/dashboard/products"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={`px-4 py-3 rounded-xl font-medium transition-colors ${
+                  isProductsActive
+                    ? 'bg-accent-50 text-accent-700'
+                    : 'text-ink-600 active:bg-slate-50'
+                }`}
+              >
+                Products
+              </Link>
+              <Link
+                href="/dashboard/purchases"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={`px-4 py-3 rounded-xl font-medium transition-colors ${
+                  isPurchasesActive
+                    ? 'bg-accent-50 text-accent-700'
+                    : 'text-ink-600 active:bg-slate-50'
+                }`}
+              >
+                Purchases
+              </Link>
+              <Link
+                href="/dashboard/categories"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={`px-4 py-3 rounded-xl font-medium transition-colors ${
+                  isCategoriesActive
+                    ? 'bg-accent-50 text-accent-700'
+                    : 'text-ink-600 active:bg-slate-50'
+                }`}
+              >
+                Categories
+              </Link>
+              <Link
+                href="/dashboard/suppliers"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={`px-4 py-3 rounded-xl font-medium transition-colors ${
+                  isSuppliersActive
+                    ? 'bg-accent-50 text-accent-700'
+                    : 'text-ink-600 active:bg-slate-50'
+                }`}
+              >
+                Suppliers
+              </Link>
+            </nav>
+
+            <div className="pt-6 border-t border-slate-200">
+              <div className="flex items-center gap-3 mb-4 px-2">
+                <div className="w-10 h-10 rounded-full bg-accent-50 text-accent-700 border border-accent-100 flex items-center justify-center font-bold text-sm font-serif shadow-2xs">
+                  {avatarInitial}
+                </div>
+                <div className="text-sm font-medium text-ink-900">
+                  Account
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  handleLogout();
+                }}
+                disabled={isLoggingOut}
+                className="w-full text-left px-4 py-3 rounded-xl font-medium text-warn-700 active:bg-warn-50 transition-colors"
+              >
+                {isLoggingOut ? 'Logging out...' : 'Log out'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {logoutError ? (
         <div className="max-w-6xl mx-auto px-4 sm:px-6 pb-2">
           <p className="text-xs sm:text-sm text-warn-700">{logoutError}</p>

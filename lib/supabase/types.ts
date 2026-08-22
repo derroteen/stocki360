@@ -35,6 +35,9 @@ export interface ProductRow {
   is_active?: boolean;
   category_id?: string | null;
   supplier_id?: string | null;
+  stock_unit: string;
+  package_unit?: string | null;
+  units_per_package?: number | null;
   created_at: string;
 }
 
@@ -53,6 +56,9 @@ export interface ProductDraft {
   reorder_level: number;
   category_id?: string | null;
   supplier_id?: string | null;
+  stock_unit?: string;
+  package_unit?: string | null;
+  units_per_package?: number | null;
 }
 
 export interface PurchaseItem {

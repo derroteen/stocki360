@@ -242,7 +242,12 @@ export default function ProductsTable({ active, archived, allCategories, allSupp
                       {allSuppliers.find(s => s.id === product.supplier_id)?.name || '-'}
                     </td>
                     <td className="py-4 px-4 text-right font-mono">
-                      {product.current_stock ?? 0}
+                      {product.current_stock ?? 0} {product.stock_unit || 'unit'}s
+                      {product.package_unit && product.units_per_package && (
+                        <div className="text-xs text-ink-500 font-sans mt-0.5">
+                          1 {product.package_unit} = {product.units_per_package} {product.stock_unit || 'unit'}s
+                        </div>
+                      )}
                     </td>
                     <td className="py-4 px-4 text-right font-medium">
                       {formatCurrency(product.sell_price)}
@@ -354,7 +359,12 @@ export default function ProductsTable({ active, archived, allCategories, allSupp
                 <div className="flex items-center justify-between text-sm pt-2 border-t border-slate-200/60">
                   <div className="text-ink-700">
                     <span className="text-ink-500 text-xs block">Stock</span>
-                    <span className="font-mono font-medium">{product.current_stock ?? 0}</span>
+                    <span className="font-mono font-medium">{product.current_stock ?? 0} {product.stock_unit || 'unit'}s</span>
+                    {product.package_unit && product.units_per_package && (
+                      <span className="text-ink-500 text-xs block mt-0.5">
+                        1 {product.package_unit} = {product.units_per_package} {product.stock_unit || 'unit'}s
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="text-right">
