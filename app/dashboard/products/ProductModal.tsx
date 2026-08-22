@@ -2,13 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ProductStockLevel } from '@/lib/supabase/types';
+import { ProductStockLevel, Category, Supplier } from '@/lib/supabase/types';
 
 interface ProductModalProps {
   isOpen: boolean;
   onClose: () => void;
   product?: ProductStockLevel | null;
   onSaveSuccess?: () => void;
+  categories: Category[];
+  suppliers: Supplier[];
 }
 
 export default function ProductModal({
@@ -16,6 +18,8 @@ export default function ProductModal({
   onClose,
   product = null,
   onSaveSuccess,
+  categories = [],
+  suppliers = [],
 }: ProductModalProps) {
   const router = useRouter();
   const [sku, setSku] = useState('');
@@ -23,6 +27,8 @@ export default function ProductModal({
   const [costPrice, setCostPrice] = useState('');
   const [sellPrice, setSellPrice] = useState('');
   const [reorderLevel, setReorderLevel] = useState('');
+  const [categoryId, setCategoryId] = useState('');
+  const [supplierId, setSupplierId] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -35,12 +41,16 @@ export default function ProductModal({
       setCostPrice(product.cost_price != null ? String(product.cost_price) : '');
       setSellPrice(product.sell_price != null ? String(product.sell_price) : '');
       setReorderLevel(product.reorder_level != null ? String(product.reorder_level) : '');
+      setCategoryId(product.category_id || '');
+      setSupplierId(product.supplier_id || '');
     } else {
       setSku('');
       setName('');
       setCostPrice('');
       setSellPrice('');
       setReorderLevel('');
+      setCategoryId('');
+      setSupplierId('');
     }
     setError(null);
   }, [product, isOpen]);
@@ -60,6 +70,8 @@ export default function ProductModal({
         cost_price: costPrice,
         sell_price: sellPrice,
         reorder_level: reorderLevel,
+        category_id: categoryId || null,
+        supplier_id: supplierId || null,
       };
 
       const endpoint = isEdit && product?.id ? `/api/products/${product.id}` : '/api/products';
@@ -164,6 +176,44 @@ export default function ProductModal({
               className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-white text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
               placeholder="Product Name"
             />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-ink-700 mb-1">
+                Category
+              </label>
+              <select
+                value={categoryId}
+                onChange={(e) => setCategoryId(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-white text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
+              >
+                <option value="">No Category</option>
+                {categories.map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-ink-700 mb-1">
+                Supplier
+              </label>
+              <select
+                value={supplierId}
+                onChange={(e) => setSupplierId(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-white text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
+              >
+                <option value="">No Supplier</option>
+                {suppliers.map((sup) => (
+                  <option key={sup.id} value={sup.id}>
+                    {sup.name}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

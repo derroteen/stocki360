@@ -1,19 +1,29 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ProductStockLevel } from '@/lib/supabase/types';
+import { ProductStockLevel, Category, Supplier } from '@/lib/supabase/types';
+import { getStockStatus } from '@/lib/stock-alerts';
 import ProductModal from './ProductModal';
 import StockMovementModal from './StockMovementModal';
 
 interface ProductsTableProps {
   active: ProductStockLevel[];
   archived: ProductStockLevel[];
+  /** All categories (active + archived) — used for table column display so archived refs still resolve. */
+  allCategories: Category[];
+  /** All suppliers (active + archived) — used for table column display so archived refs still resolve. */
+  allSuppliers: Supplier[];
+  /** Only active categories — passed to the product modal dropdown so archived items can't be selected. */
+  activeCategories: Category[];
+  /** Only active suppliers — passed to the product modal dropdown so archived items can't be selected. */
+  activeSuppliers: Supplier[];
 }
 
 type ProductView = 'active' | 'archived';
 
-export default function ProductsTable({ active, archived }: ProductsTableProps) {
+export default function ProductsTable({ active, archived, allCategories, allSuppliers, activeCategories, activeSuppliers }: ProductsTableProps) {
   const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<ProductStockLevel | null>(null);
@@ -129,13 +139,26 @@ export default function ProductsTable({ active, archived }: ProductsTableProps) 
           </div>
 
           {view === 'active' ? (
-            <button
-              type="button"
-              onClick={handleAddProduct}
-              className="min-h-[44px] px-4 py-2 inline-flex items-center justify-center gap-2 bg-accent-500 hover:bg-accent-600 text-white rounded-lg font-medium shadow-sm transition-colors text-sm"
-            >
-              <span className="text-lg leading-none">+</span> Add product
-            </button>
+            <div className="flex items-center gap-2">
+              {active.some((p) => (p.current_stock ?? 0) <= (p.reorder_level ?? 0)) && (
+                <Link
+                  href="/dashboard/products/low-stock"
+                  className="min-h-[44px] px-3.5 py-2 inline-flex items-center justify-center gap-1.5 bg-warn-50 hover:bg-warn-100 text-warn-700 border border-warn-600/30 rounded-lg font-medium transition-colors text-sm"
+                >
+                  <span>⚠️</span>
+                  <span>
+                    {active.filter((p) => (p.current_stock ?? 0) <= (p.reorder_level ?? 0)).length} Alerts
+                  </span>
+                </Link>
+              )}
+              <button
+                type="button"
+                onClick={handleAddProduct}
+                className="min-h-[44px] px-4 py-2 inline-flex items-center justify-center gap-2 bg-accent-500 hover:bg-accent-600 text-white rounded-lg font-medium shadow-sm transition-colors text-sm"
+              >
+                <span className="text-lg leading-none">+</span> Add product
+              </button>
+            </div>
           ) : null}
         </div>
       </div>
@@ -185,6 +208,8 @@ export default function ProductsTable({ active, archived }: ProductsTableProps) 
                 <tr className="border-b border-slate-200 bg-surface text-ink-700 font-medium">
                   <th className="py-3.5 px-4">SKU</th>
                   <th className="py-3.5 px-4">Name</th>
+                  <th className="py-3.5 px-4">Category</th>
+                  <th className="py-3.5 px-4">Supplier</th>
                   <th className="py-3.5 px-4 text-right">Stock</th>
                   <th className="py-3.5 px-4 text-right">Sell price</th>
                   <th className="py-3.5 px-4 text-center">Status</th>
@@ -208,6 +233,14 @@ export default function ProductsTable({ active, archived }: ProductsTableProps) 
                     <td className="py-4 px-4 font-medium text-ink-900">
                       {product.name}
                     </td>
+                    <td className="py-4 px-4 text-ink-600">
+                      {/* Use allCategories so existing products with archived categories still display the name */}
+                      {allCategories.find(c => c.id === product.category_id)?.name || '-'}
+                    </td>
+                    <td className="py-4 px-4 text-ink-600">
+                      {/* Use allSuppliers so existing products with archived suppliers still display the name */}
+                      {allSuppliers.find(s => s.id === product.supplier_id)?.name || '-'}
+                    </td>
                     <td className="py-4 px-4 text-right font-mono">
                       {product.current_stock ?? 0}
                     </td>
@@ -215,17 +248,31 @@ export default function ProductsTable({ active, archived }: ProductsTableProps) 
                       {formatCurrency(product.sell_price)}
                     </td>
                     <td className="py-4 px-4 text-center">
-                      {product.is_low_stock ? (
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-warn-100 text-warn-700 border border-warn-600/30">
-                          <span className="w-1.5 h-1.5 rounded-full bg-warn-600" />
-                          Low stock
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-good-100 text-good-700 border border-good-600/30">
-                          <span className="w-1.5 h-1.5 rounded-full bg-good-600" />
-                          In stock
-                        </span>
-                      )}
+                      {(() => {
+                        const status = getStockStatus(product.current_stock ?? 0, product.reorder_level ?? 0);
+                        if (status === 'out_of_stock') {
+                          return (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700 border border-red-200">
+                              <span className="w-1.5 h-1.5 rounded-full bg-red-600" />
+                              Out of stock
+                            </span>
+                          );
+                        }
+                        if (status === 'low_stock') {
+                          return (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-warn-100 text-warn-700 border border-warn-600/30">
+                              <span className="w-1.5 h-1.5 rounded-full bg-warn-600" />
+                              Low stock
+                            </span>
+                          );
+                        }
+                        return (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-good-100 text-good-700 border border-good-600/30">
+                            <span className="w-1.5 h-1.5 rounded-full bg-good-600" />
+                            In stock
+                          </span>
+                        );
+                      })()}
                     </td>
                     <td className="py-4 px-4 text-right">
                       {view === 'active' ? (
@@ -277,15 +324,31 @@ export default function ProductsTable({ active, archived }: ProductsTableProps) 
                       {product.name}
                     </h4>
                   </div>
-                  {product.is_low_stock ? (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-warn-100 text-warn-700 border border-warn-600/30">
-                      Low stock
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-good-100 text-good-700 border border-good-600/30">
-                      In stock
-                    </span>
-                  )}
+                  {(() => {
+                    const status = getStockStatus(product.current_stock ?? 0, product.reorder_level ?? 0);
+                    if (status === 'out_of_stock') {
+                      return (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700 border border-red-200">
+                          <span className="w-1.5 h-1.5 rounded-full bg-red-600" />
+                          Out of stock
+                        </span>
+                      );
+                    }
+                    if (status === 'low_stock') {
+                      return (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-warn-100 text-warn-700 border border-warn-600/30">
+                          <span className="w-1.5 h-1.5 rounded-full bg-warn-600" />
+                          Low stock
+                        </span>
+                      );
+                    }
+                    return (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-good-100 text-good-700 border border-good-600/30">
+                        <span className="w-1.5 h-1.5 rounded-full bg-good-600" />
+                        In stock
+                      </span>
+                    );
+                  })()}
                 </div>
 
                 <div className="flex items-center justify-between text-sm pt-2 border-t border-slate-200/60">
@@ -332,12 +395,14 @@ export default function ProductsTable({ active, archived }: ProductsTableProps) 
         </>
       )}
 
-      {/* Product Modal for Create / Edit */}
+      {/* Product Modal: receives only ACTIVE categories/suppliers for selectors */}
       <ProductModal
         isOpen={isModalOpen}
         onClose={handleCloseModal}
         product={selectedProduct}
         onSaveSuccess={handleSaveOrDelete}
+        categories={activeCategories}
+        suppliers={activeSuppliers}
       />
 
       {/* Stock Movement Modal */}

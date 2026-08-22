@@ -36,6 +36,8 @@ export default function DashboardNav() {
 
   const isDashboardActive = pathname === '/dashboard';
   const isProductsActive = pathname.startsWith('/dashboard/products');
+  const isCategoriesActive = pathname.startsWith('/dashboard/categories');
+  const isSuppliersActive = pathname.startsWith('/dashboard/suppliers');
 
   useEffect(() => {
     let isMounted = true;
@@ -121,6 +123,26 @@ export default function DashboardNav() {
             }`}
           >
             Products
+          </Link>
+          <Link
+            href="/dashboard/categories"
+            className={`px-3 sm:px-4 py-1.5 rounded-full transition-colors ${
+              isCategoriesActive
+                ? 'bg-accent-50 text-accent-700 font-semibold border border-accent-100 shadow-2xs'
+                : 'text-ink-500 hover:text-ink-900'
+            }`}
+          >
+            Categories
+          </Link>
+          <Link
+            href="/dashboard/suppliers"
+            className={`px-3 sm:px-4 py-1.5 rounded-full transition-colors ${
+              isSuppliersActive
+                ? 'bg-accent-50 text-accent-700 font-semibold border border-accent-100 shadow-2xs'
+                : 'text-ink-500 hover:text-ink-900'
+            }`}
+          >
+            Suppliers
           </Link>
         </nav>
 

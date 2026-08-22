@@ -12,6 +12,8 @@ type ProductPayload = {
   cost_price: number;
   sell_price: number;
   reorder_level: number;
+  category_id?: string | null;
+  supplier_id?: string | null;
 };
 
 function toNonEmptyTrimmedString(value: unknown): string | null {
@@ -77,6 +79,8 @@ function validateProductInput(body: unknown): ProductPayload {
     cost_price: toValidNonNegativeNumber(record.cost_price, 'Cost price'),
     sell_price: toValidNonNegativeNumber(record.sell_price, 'Sell price'),
     reorder_level: toValidNonNegativeInteger(record.reorder_level, 'Reorder level'),
+    category_id: toNonEmptyTrimmedString(record.category_id),
+    supplier_id: toNonEmptyTrimmedString(record.supplier_id),
   };
 }
 

@@ -1,18 +1,17 @@
 import { redirect } from 'next/navigation';
-import ProductsTable from './ProductsTable';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { ProductStockLevel, Category, Supplier } from '@/lib/supabase/types';
 import { resolveActiveBusinessContext } from '@/lib/supabase/business-context';
+import LowStockTable from './LowStockTable';
 
 export const dynamic = 'force-dynamic';
 
-export default async function ProductsPage() {
+export default async function LowStockPage() {
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Check authentication first so logged-out users are not misclassified as zero-membership users.
   if (!user) {
     redirect('/login');
   }
@@ -20,7 +19,6 @@ export default async function ProductsPage() {
   const resolution = await resolveActiveBusinessContext(supabase);
 
   if (!resolution.context && resolution.memberships.length === 0) {
-    // Authenticated users with no memberships should be sent to business onboarding.
     redirect('/dashboard/select-business');
   }
 
@@ -34,17 +32,17 @@ export default async function ProductsPage() {
 
   const activeBusinessId = resolution.context.businessId;
 
-  let activeProducts: ProductStockLevel[] = [];
-  let archivedProducts: ProductStockLevel[] = [];
+  let lowStockProducts: ProductStockLevel[] = [];
   let categories: Category[] = [];
   let suppliers: Supplier[] = [];
 
   try {
+    // Single consolidated query batch reusing the existing product_stock_levels view
     const [
       { data: stockLevels },
-      { data: productStates },
+      { data: activeProductRows },
       { data: categoriesData },
-      { data: suppliersData }
+      { data: suppliersData },
     ] = await Promise.all([
       supabase
         .from('product_stock_levels')
@@ -52,8 +50,9 @@ export default async function ProductsPage() {
         .eq('business_id', activeBusinessId),
       supabase
         .from('products')
-        .select('id,is_active')
-        .eq('business_id', activeBusinessId),
+        .select('id')
+        .eq('business_id', activeBusinessId)
+        .eq('is_active', true),
       supabase
         .from('categories')
         .select('*')
@@ -63,45 +62,30 @@ export default async function ProductsPage() {
         .from('suppliers')
         .select('*')
         .eq('business_id', activeBusinessId)
-        .order('name', { ascending: true })
+        .order('name', { ascending: true }),
     ]);
 
-    if (stockLevels && productStates) {
-      const activeIds = new Set(
-        (productStates as Array<{ id: string; is_active: boolean }>)
-          .filter((row) => row.is_active)
-          .map((row) => row.id)
-      );
-      const archivedIds = new Set(
-        (productStates as Array<{ id: string; is_active: boolean }>)
-          .filter((row) => !row.is_active)
-          .map((row) => row.id)
-      );
+    if (stockLevels && activeProductRows) {
+      const activeIds = new Set((activeProductRows as Array<{ id: string }>).map((row) => row.id));
 
-      activeProducts = (stockLevels as ProductStockLevel[]).filter((p) => activeIds.has(p.id));
-      archivedProducts = (stockLevels as ProductStockLevel[]).filter((p) => archivedIds.has(p.id));
+      // Filter only active products that are low stock or out of stock (current_stock <= reorder_level)
+      lowStockProducts = (stockLevels as ProductStockLevel[])
+        .filter((p) => activeIds.has(p.id))
+        .filter((p) => (p.current_stock ?? 0) <= (p.reorder_level ?? 0));
     }
 
-    if (categoriesData) {
-      categories = categoriesData;
-    }
-    
-    if (suppliersData) {
-      suppliers = suppliersData;
-    }
+    if (categoriesData) categories = categoriesData;
+    if (suppliersData) suppliers = suppliersData;
   } catch (err) {
-    console.error('Error loading products:', err);
+    console.error('Error loading low-stock products:', err);
   }
 
-  // Pass ALL categories/suppliers for table column display (so archived ones still show on existing products)
-  // and ACTIVE-only lists to the product modal dropdowns so archived items can't be selected.
   const activeCategories = categories.filter((c) => c.is_active);
   const activeSuppliers = suppliers.filter((s) => s.is_active);
 
   return (
-    <ProductsTable
-      active={activeProducts}
-      archived={archivedProducts}
+    <LowStockTable
+      products={lowStockProducts}
       allCategories={categories}
       allSuppliers={suppliers}
       activeCategories={activeCategories}
