@@ -36,6 +36,7 @@ export default function DashboardNav() {
 
   const isDashboardActive = pathname === '/dashboard';
   const isProductsActive = pathname.startsWith('/dashboard/products');
+  const isPurchasesActive = pathname.startsWith('/dashboard/purchases');
   const isCategoriesActive = pathname.startsWith('/dashboard/categories');
   const isSuppliersActive = pathname.startsWith('/dashboard/suppliers');
 
@@ -123,6 +124,16 @@ export default function DashboardNav() {
             }`}
           >
             Products
+          </Link>
+          <Link
+            href="/dashboard/purchases"
+            className={`px-3 sm:px-4 py-1.5 rounded-full transition-colors ${
+              isPurchasesActive
+                ? 'bg-accent-50 text-accent-700 font-semibold border border-accent-100 shadow-2xs'
+                : 'text-ink-500 hover:text-ink-900'
+            }`}
+          >
+            Purchases
           </Link>
           <Link
             href="/dashboard/categories"

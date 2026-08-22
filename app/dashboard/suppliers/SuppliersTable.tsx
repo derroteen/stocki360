@@ -6,14 +6,17 @@ import { Supplier } from '@/lib/supabase/types';
 import SupplierModal from './SupplierModal';
 import ConfirmDialog from '@/components/ConfirmDialog';
 
+import Link from 'next/link';
+
 interface SuppliersTableProps {
   // All suppliers for this business (active + archived), sorted by name.
   suppliers: Supplier[];
+  stats?: Record<string, { orderCount: number; totalAmount: number }>;
 }
 
 type ViewFilter = 'active' | 'archived';
 
-export default function SuppliersTable({ suppliers }: SuppliersTableProps) {
+export default function SuppliersTable({ suppliers, stats = {} }: SuppliersTableProps) {
   const router = useRouter();
 
   // Tab state: show active suppliers by default.
@@ -187,6 +190,7 @@ export default function SuppliersTable({ suppliers }: SuppliersTableProps) {
                   <th className="py-3.5 px-4">Name</th>
                   <th className="py-3.5 px-4">Contact</th>
                   <th className="py-3.5 px-4">Phone & Email</th>
+                  <th className="py-3.5 px-4 text-center">Purchases</th>
                   <th className="py-3.5 px-4 text-right">Actions</th>
                 </tr>
               </thead>
@@ -207,6 +211,19 @@ export default function SuppliersTable({ suppliers }: SuppliersTableProps) {
                       {supplier.phone && <div className="block">{supplier.phone}</div>}
                       {supplier.email && <div className="block">{supplier.email}</div>}
                       {!supplier.phone && !supplier.email && <span>-</span>}
+                    </td>
+                    <td className="py-4 px-4 text-center">
+                      {stats[supplier.id]?.orderCount ? (
+                        <Link
+                          href={`/dashboard/purchases`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-accent-50 text-accent-700 hover:bg-accent-100 transition-colors border border-accent-100"
+                        >
+                          {stats[supplier.id].orderCount} {stats[supplier.id].orderCount === 1 ? 'order' : 'orders'}
+                        </Link>
+                      ) : (
+                        <span className="text-xs text-ink-400">0 orders</span>
+                      )}
                     </td>
                     <td className="py-4 px-4 text-right">
                       {view === 'active' ? (
@@ -260,6 +277,13 @@ export default function SuppliersTable({ suppliers }: SuppliersTableProps) {
                     {supplier.phone && <div>{supplier.phone}</div>}
                     {supplier.email && <div>{supplier.email}</div>}
                   </div>
+                  {stats[supplier.id]?.orderCount ? (
+                    <div className="mt-2">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-accent-50 text-accent-700 border border-accent-100">
+                        {stats[supplier.id].orderCount} {stats[supplier.id].orderCount === 1 ? 'purchase order' : 'purchase orders'}
+                      </span>
+                    </div>
+                  ) : null}
                 </div>
                 <div className="flex justify-end pt-2 border-t border-slate-200/60">
                   {view === 'active' ? (

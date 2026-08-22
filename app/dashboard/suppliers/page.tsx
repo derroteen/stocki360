@@ -5,6 +5,13 @@ import { resolveActiveBusinessContext } from '@/lib/supabase/business-context';
 
 export const dynamic = 'force-dynamic';
 
+export interface SupplierPurchaseStats {
+  [supplierId: string]: {
+    orderCount: number;
+    totalAmount: number;
+  };
+}
+
 export default async function SuppliersPage() {
   const supabase = await createSupabaseServerClient();
   const {
@@ -29,15 +36,48 @@ export default async function SuppliersPage() {
     redirect('/login');
   }
 
-  const { data: suppliers, error } = await supabase
-    .from('suppliers')
-    .select('*')
-    .eq('business_id', resolution.context.businessId)
-    .order('name', { ascending: true });
+  const activeBusinessId = resolution.context.businessId;
 
-  if (error) {
-    console.error('Error fetching suppliers:', error);
+  let suppliers: any[] = [];
+  let purchases: any[] = [];
+
+  try {
+    const [
+      { data: suppliersData },
+      { data: purchasesData },
+    ] = await Promise.all([
+      supabase
+        .from('suppliers')
+        .select('*')
+        .eq('business_id', activeBusinessId)
+        .order('name', { ascending: true }),
+      supabase
+        .from('purchases')
+        .select('id, supplier_id, total_amount')
+        .eq('business_id', activeBusinessId),
+    ]);
+
+    if (suppliersData) {
+      suppliers = suppliersData;
+    }
+    if (purchasesData) {
+      purchases = purchasesData;
+    }
+  } catch {
+    // Graceful fallback if tables or queries are temporarily unavailable
   }
 
-  return <SuppliersTable suppliers={suppliers || []} />;
+  // Aggregate stats per supplier
+  const stats: SupplierPurchaseStats = {};
+  for (const p of purchases) {
+    if (p.supplier_id) {
+      if (!stats[p.supplier_id]) {
+        stats[p.supplier_id] = { orderCount: 0, totalAmount: 0 };
+      }
+      stats[p.supplier_id].orderCount += 1;
+      stats[p.supplier_id].totalAmount += Number(p.total_amount) || 0;
+    }
+  }
+
+  return <SuppliersTable suppliers={suppliers} stats={stats} />;
 }
