@@ -40,6 +40,7 @@ export default function DashboardNav() {
   const isPurchasesActive = pathname.startsWith('/dashboard/purchases');
   const isCategoriesActive = pathname.startsWith('/dashboard/categories');
   const isSuppliersActive = pathname.startsWith('/dashboard/suppliers');
+  const isSalesActive = pathname.startsWith('/dashboard/sales');
 
   useEffect(() => {
     let isMounted = true;
@@ -137,6 +138,16 @@ export default function DashboardNav() {
             Purchases
           </Link>
           <Link
+            href="/dashboard/sales"
+            className={`px-3 sm:px-4 py-1.5 rounded-full transition-colors ${
+              isSalesActive
+                ? 'bg-accent-50 text-accent-700 font-semibold border border-accent-100 shadow-2xs'
+                : 'text-ink-500 hover:text-ink-900'
+            }`}
+          >
+            Sales
+          </Link>
+          <Link
             href="/dashboard/categories"
             className={`px-3 sm:px-4 py-1.5 rounded-full transition-colors ${
               isCategoriesActive
@@ -204,7 +215,7 @@ export default function DashboardNav() {
               </svg>
             </button>
           </div>
-          
+
           <div className="flex-1 overflow-y-auto px-4 py-6 space-y-6">
             <nav className="flex flex-col gap-2">
               <Link
@@ -239,6 +250,17 @@ export default function DashboardNav() {
                 }`}
               >
                 Purchases
+              </Link>
+              <Link
+                href="/dashboard/sales"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={`px-4 py-3 rounded-xl font-medium transition-colors ${
+                  isSalesActive
+                    ? 'bg-accent-50 text-accent-700'
+                    : 'text-ink-600 active:bg-slate-50'
+                }`}
+              >
+                Sales
               </Link>
               <Link
                 href="/dashboard/categories"
