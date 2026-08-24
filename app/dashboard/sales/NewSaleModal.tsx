@@ -1,12 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Supplier, ProductStockLevel, CreatePurchaseItemPayload } from '@/lib/supabase/types';
+import { ProductStockLevel, CreateSaleItemPayload } from '@/lib/supabase/types';
 
-interface NewPurchaseModalProps {
+interface NewSaleModalProps {
   isOpen: boolean;
   onClose: () => void;
-  suppliers: Supplier[];
   products: ProductStockLevel[];
   onSuccess: () => void;
 }
@@ -15,30 +14,33 @@ interface FormItem {
   productId: string;
   entryMode: 'individual' | 'package';
   quantity: string;
-  unitCost: string;
+  unitPrice: string;
   packageQuantity: string;
-  packageUnitCost: string;
+  packageUnitPrice: string;
 }
 
 const emptyItem = (): FormItem => ({
   productId: '',
   entryMode: 'individual',
   quantity: '1',
-  unitCost: '',
+  unitPrice: '',
   packageQuantity: '1',
-  packageUnitCost: '',
+  packageUnitPrice: '',
 });
 
-export default function NewPurchaseModal({
+const PAYMENT_METHODS = ['Cash', 'M-Pesa', 'Bank Transfer', 'Card', 'Other'];
+
+export default function NewSaleModal({
   isOpen,
   onClose,
-  suppliers,
   products,
   onSuccess,
-}: NewPurchaseModalProps) {
-  const [supplierId, setSupplierId] = useState('');
+}: NewSaleModalProps) {
+  const [customerName, setCustomerName] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
   const [referenceNumber, setReferenceNumber] = useState('');
-  const [purchaseDate, setPurchaseDate] = useState('');
+  const [saleDate, setSaleDate] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('Cash');
   const [notes, setNotes] = useState('');
   const [idempotencyKey, setIdempotencyKey] = useState('');
 
@@ -47,17 +49,14 @@ export default function NewPurchaseModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Initialize defaults on open. A new idempotency key is generated every
-  // time the modal transitions closed -> open, so re-opening for a new
-  // purchase never reuses a prior submission's key. Within one open
-  // session (including retries after a failed submit), the key stays the
-  // same on purpose.
   useEffect(() => {
     if (isOpen) {
       setError(null);
-      setSupplierId('');
+      setCustomerName('');
+      setCustomerPhone('');
       setReferenceNumber('');
-      setPurchaseDate(new Date().toISOString().split('T')[0]);
+      setSaleDate(new Date().toISOString().split('T')[0]);
+      setPaymentMethod('Cash');
       setNotes('');
       setIdempotencyKey(crypto.randomUUID());
       setItems([emptyItem()]);
@@ -73,6 +72,19 @@ export default function NewPurchaseModal({
     return Boolean(prod?.package_unit && prod?.units_per_package);
   };
 
+  // Max sellable quantity in the CURRENT entry mode's units, so the input
+  // itself won't let a user type more than is in stock. current_stock is
+  // always in base stock units regardless of how it was received.
+  const maxSellable = (productId: string, mode: 'individual' | 'package') => {
+    const prod = getProduct(productId);
+    if (!prod) return 0;
+    const stock = prod.current_stock ?? 0;
+    if (mode === 'package' && prod.units_per_package) {
+      return Math.floor(stock / prod.units_per_package);
+    }
+    return stock;
+  };
+
   const handleProductChange = (index: number, newProductId: string) => {
     const selectedProd = getProduct(newProductId);
     setItems((prev) => {
@@ -82,10 +94,10 @@ export default function NewPurchaseModal({
         productId: newProductId,
         entryMode: 'individual',
         packageQuantity: '1',
-        packageUnitCost: '',
-        unitCost:
-          updated[index].unitCost ||
-          (selectedProd?.cost_price != null ? String(selectedProd.cost_price) : ''),
+        packageUnitPrice: '',
+        unitPrice:
+          updated[index].unitPrice ||
+          (selectedProd?.sell_price != null ? String(selectedProd.sell_price) : ''),
       };
       return updated;
     });
@@ -98,8 +110,8 @@ export default function NewPurchaseModal({
         ...updated[index],
         entryMode: mode,
         ...(mode === 'individual'
-          ? { packageQuantity: '1', packageUnitCost: '' }
-          : { quantity: '1', unitCost: '' }),
+          ? { packageQuantity: '1', packageUnitPrice: '' }
+          : { quantity: '1', unitPrice: '' }),
       };
       return updated;
     });
@@ -113,10 +125,10 @@ export default function NewPurchaseModal({
     });
   };
 
-  const handleUnitCostChange = (index: number, val: string) => {
+  const handleUnitPriceChange = (index: number, val: string) => {
     setItems((prev) => {
       const updated = [...prev];
-      updated[index] = { ...updated[index], unitCost: val };
+      updated[index] = { ...updated[index], unitPrice: val };
       return updated;
     });
   };
@@ -129,10 +141,10 @@ export default function NewPurchaseModal({
     });
   };
 
-  const handlePackageUnitCostChange = (index: number, val: string) => {
+  const handlePackageUnitPriceChange = (index: number, val: string) => {
     setItems((prev) => {
       const updated = [...prev];
-      updated[index] = { ...updated[index], packageUnitCost: val };
+      updated[index] = { ...updated[index], packageUnitPrice: val };
       return updated;
     });
   };
@@ -149,11 +161,11 @@ export default function NewPurchaseModal({
   const lineTotals = items.map((item) => {
     if (item.entryMode === 'package') {
       const q = Math.max(0, parseInt(item.packageQuantity, 10) || 0);
-      const c = Math.max(0, parseFloat(item.packageUnitCost) || 0);
+      const c = Math.max(0, parseFloat(item.packageUnitPrice) || 0);
       return q * c;
     }
     const q = Math.max(0, parseInt(item.quantity, 10) || 0);
-    const c = Math.max(0, parseFloat(item.unitCost) || 0);
+    const c = Math.max(0, parseFloat(item.unitPrice) || 0);
     return q * c;
   });
 
@@ -172,7 +184,7 @@ export default function NewPurchaseModal({
     setError(null);
 
     const seen = new Set<string>();
-    const payloadItems: CreatePurchaseItemPayload[] = [];
+    const payloadItems: CreateSaleItemPayload[] = [];
 
     for (let i = 0; i < items.length; i++) {
       const it = items[i];
@@ -201,9 +213,18 @@ export default function NewPurchaseModal({
           return;
         }
 
-        const pkgCost = parseFloat(it.packageUnitCost);
-        if (isNaN(pkgCost) || pkgCost < 0) {
-          setError(`Item #${i + 1}: Please provide a valid cost per package.`);
+        const pkgPrice = parseFloat(it.packageUnitPrice);
+        if (isNaN(pkgPrice) || pkgPrice < 0) {
+          setError(`Item #${i + 1}: Please provide a valid price per package.`);
+          return;
+        }
+
+        // Client-side stock hint only -- the RPC/record_stock_movement is
+        // the actual source of truth and will reject an over-sell even if
+        // this check is somehow bypassed or current_stock is stale.
+        const max = maxSellable(it.productId, 'package');
+        if (pkgQty > max) {
+          setError(`Item #${i + 1}: Only ${max} package(s) available in stock.`);
           return;
         }
 
@@ -211,7 +232,7 @@ export default function NewPurchaseModal({
           productId: it.productId,
           entryMode: 'package',
           packageQuantity: pkgQty,
-          packageUnitCost: pkgCost,
+          packageUnitPrice: pkgPrice,
         });
       } else {
         const qty = parseInt(it.quantity, 10);
@@ -220,9 +241,15 @@ export default function NewPurchaseModal({
           return;
         }
 
-        const cost = parseFloat(it.unitCost);
-        if (isNaN(cost) || cost < 0) {
-          setError(`Item #${i + 1}: Please provide a valid unit cost.`);
+        const price = parseFloat(it.unitPrice);
+        if (isNaN(price) || price < 0) {
+          setError(`Item #${i + 1}: Please provide a valid unit price.`);
+          return;
+        }
+
+        const max = maxSellable(it.productId, 'individual');
+        if (qty > max) {
+          setError(`Item #${i + 1}: Only ${max} available in stock.`);
           return;
         }
 
@@ -230,7 +257,7 @@ export default function NewPurchaseModal({
           productId: it.productId,
           entryMode: 'individual',
           quantity: qty,
-          unitCost: cost,
+          unitPrice: price,
         });
       }
     }
@@ -238,13 +265,15 @@ export default function NewPurchaseModal({
     setIsSubmitting(true);
 
     try {
-      const response = await fetch('/api/purchases', {
+      const response = await fetch('/api/sales', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          supplierId: supplierId || null,
+          customerName: customerName.trim() || null,
+          customerPhone: customerPhone.trim() || null,
           referenceNumber: referenceNumber.trim() || null,
-          purchaseDate: purchaseDate ? new Date(purchaseDate).toISOString() : undefined,
+          saleDate: saleDate ? new Date(saleDate).toISOString() : undefined,
+          paymentMethod: paymentMethod || null,
           notes: notes.trim() || null,
           items: payloadItems,
           idempotencyKey,
@@ -253,13 +282,13 @@ export default function NewPurchaseModal({
 
       if (!response.ok) {
         const body = (await response.json().catch(() => null)) as { error?: string } | null;
-        throw new Error(body?.error ?? 'Failed to record purchase.');
+        throw new Error(body?.error ?? 'Failed to record sale.');
       }
 
       onSuccess();
       onClose();
     } catch (err: any) {
-      setError(err?.message ?? 'An error occurred while saving the purchase.');
+      setError(err?.message ?? 'An error occurred while saving the sale.');
     } finally {
       setIsSubmitting(false);
     }
@@ -281,10 +310,10 @@ export default function NewPurchaseModal({
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
           <div>
             <h2 className="text-lg font-bold text-ink-900 font-serif">
-              Receive Stock / New Purchase
+              Record Sale
             </h2>
             <p className="text-xs text-ink-500 mt-0.5">
-              Record inventory received from a supplier. Stock levels will increase automatically.
+              Record a sale to a customer. Stock levels will decrease automatically.
             </p>
           </div>
           <button
@@ -305,59 +334,86 @@ export default function NewPurchaseModal({
             </div>
           )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="purchase-supplier" className="block text-xs font-semibold text-ink-700 mb-1.5">
-                Supplier
-              </label>
-              <select
-                id="purchase-supplier"
-                value={supplierId}
-                onChange={(e) => setSupplierId(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-accent-500 focus:border-accent-500 min-h-[44px] bg-white"
-              >
-                <option value="">No Supplier / Direct Purchase</option>
-                {suppliers.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label htmlFor="purchase-ref" className="block text-xs font-semibold text-ink-700 mb-1.5">
-                Reference / Invoice #
+              <label htmlFor="sale-customer-name" className="block text-xs font-semibold text-ink-700 mb-1.5">
+                Customer Name <span className="text-ink-500 font-normal">(optional)</span>
               </label>
               <input
-                id="purchase-ref"
+                id="sale-customer-name"
                 type="text"
-                value={referenceNumber}
-                onChange={(e) => setReferenceNumber(e.target.value)}
-                placeholder="e.g. INV-10492"
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+                placeholder="e.g. Walk-in, Jane Doe"
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-accent-500 focus:border-accent-500 min-h-[44px]"
               />
             </div>
 
             <div>
-              <label htmlFor="purchase-date" className="block text-xs font-semibold text-ink-700 mb-1.5">
-                Purchase Date
+              <label htmlFor="sale-customer-phone" className="block text-xs font-semibold text-ink-700 mb-1.5">
+                Customer Phone <span className="text-ink-500 font-normal">(optional)</span>
               </label>
               <input
-                id="purchase-date"
+                id="sale-customer-phone"
+                type="text"
+                value={customerPhone}
+                onChange={(e) => setCustomerPhone(e.target.value)}
+                placeholder="e.g. 0712 345678"
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-accent-500 focus:border-accent-500 min-h-[44px]"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label htmlFor="sale-ref" className="block text-xs font-semibold text-ink-700 mb-1.5">
+                Reference / Receipt #
+              </label>
+              <input
+                id="sale-ref"
+                type="text"
+                value={referenceNumber}
+                onChange={(e) => setReferenceNumber(e.target.value)}
+                placeholder="e.g. RCT-1042"
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-accent-500 focus:border-accent-500 min-h-[44px]"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="sale-date" className="block text-xs font-semibold text-ink-700 mb-1.5">
+                Sale Date
+              </label>
+              <input
+                id="sale-date"
                 type="date"
                 required
-                value={purchaseDate}
-                onChange={(e) => setPurchaseDate(e.target.value)}
+                value={saleDate}
+                onChange={(e) => setSaleDate(e.target.value)}
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-accent-500 focus:border-accent-500 min-h-[44px] bg-white"
               />
+            </div>
+
+            <div>
+              <label htmlFor="sale-payment" className="block text-xs font-semibold text-ink-700 mb-1.5">
+                Payment Method
+              </label>
+              <select
+                id="sale-payment"
+                value={paymentMethod}
+                onChange={(e) => setPaymentMethod(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-accent-500 focus:border-accent-500 min-h-[44px] bg-white"
+              >
+                {PAYMENT_METHODS.map((m) => (
+                  <option key={m} value={m}>{m}</option>
+                ))}
+              </select>
             </div>
           </div>
 
           <div className="space-y-3">
             <div className="flex items-center justify-between border-b border-slate-200 pb-2">
               <h3 className="text-sm font-bold text-ink-900 font-serif">
-                Items Received
+                Items Sold
               </h3>
               <span className="text-xs text-ink-500">
                 {items.length} {items.length === 1 ? 'item' : 'items'}
@@ -387,8 +443,8 @@ export default function NewPurchaseModal({
                         >
                           <option value="">Select product...</option>
                           {products.map((p) => (
-                            <option key={p.id} value={p.id}>
-                              {p.name} ({p.sku})
+                            <option key={p.id} value={p.id} disabled={(p.current_stock ?? 0) <= 0}>
+                              {p.name} ({p.sku}) — {p.current_stock ?? 0} {p.stock_unit || 'unit'}s in stock
                             </option>
                           ))}
                         </select>
@@ -414,15 +470,15 @@ export default function NewPurchaseModal({
 
                           <div className="sm:col-span-2">
                             <label className="block text-xs font-medium text-ink-600 mb-1">
-                              Unit Cost (KES) *
+                              Unit Price (KES) *
                             </label>
                             <input
                               type="number"
                               min="0"
                               step="0.01"
                               required
-                              value={item.unitCost}
-                              onChange={(e) => handleUnitCostChange(index, e.target.value)}
+                              value={item.unitPrice}
+                              onChange={(e) => handleUnitPriceChange(index, e.target.value)}
                               placeholder="0.00"
                               className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white min-h-[44px]"
                             />
@@ -450,15 +506,15 @@ export default function NewPurchaseModal({
 
                           <div className="sm:col-span-2">
                             <label className="block text-xs font-medium text-ink-600 mb-1">
-                              Cost / {selectedProduct?.package_unit} (KES) *
+                              Price / {selectedProduct?.package_unit} (KES) *
                             </label>
                             <input
                               type="number"
                               min="0"
                               step="0.01"
                               required
-                              value={item.packageUnitCost}
-                              onChange={(e) => handlePackageUnitCostChange(index, e.target.value)}
+                              value={item.packageUnitPrice}
+                              onChange={(e) => handlePackageUnitPriceChange(index, e.target.value)}
                               placeholder="0.00"
                               className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white min-h-[44px]"
                             />
@@ -490,11 +546,11 @@ export default function NewPurchaseModal({
 
                     {hasPackaging && (
                       <div className="flex items-center gap-4 pt-1 border-t border-slate-200/60">
-                        <span className="text-xs font-medium text-ink-600">Receive as:</span>
+                        <span className="text-xs font-medium text-ink-600">Sell as:</span>
                         <label className="flex items-center gap-1.5 cursor-pointer">
                           <input
                             type="radio"
-                            name={`entry-mode-${index}`}
+                            name={`sale-entry-mode-${index}`}
                             checked={item.entryMode === 'individual'}
                             onChange={() => handleEntryModeChange(index, 'individual')}
                             className="text-accent-600 focus:ring-accent-500 w-4 h-4"
@@ -506,13 +562,13 @@ export default function NewPurchaseModal({
                         <label className="flex items-center gap-1.5 cursor-pointer">
                           <input
                             type="radio"
-                            name={`entry-mode-${index}`}
+                            name={`sale-entry-mode-${index}`}
                             checked={item.entryMode === 'package'}
                             onChange={() => handleEntryModeChange(index, 'package')}
                             className="text-accent-600 focus:ring-accent-500 w-4 h-4"
                           />
                           <span className="text-xs text-ink-700">
-                            Bulk {selectedProduct?.package_unit}s
+                            Whole {selectedProduct?.package_unit}s
                           </span>
                         </label>
                       </div>
@@ -522,21 +578,27 @@ export default function NewPurchaseModal({
                       selectedProduct?.units_per_package &&
                       (() => {
                         const pkgQty = parseInt(item.packageQuantity, 10) || 0;
-                        const pkgCost = parseFloat(item.packageUnitCost) || 0;
+                        const pkgPrice = parseFloat(item.packageUnitPrice) || 0;
                         if (pkgQty <= 0) return null;
                         const stockUnits = pkgQty * selectedProduct.units_per_package;
-                        const perUnitCost = pkgCost > 0 ? pkgCost / selectedProduct.units_per_package : null;
+                        const perUnitPrice = pkgPrice > 0 ? pkgPrice / selectedProduct.units_per_package : null;
                         return (
                           <p className="text-xs text-ink-600 bg-white p-2 rounded border border-slate-200">
-                            Stock added: <strong>{stockUnits} {selectedProduct.stock_unit || 'unit'}s</strong>
-                            {perUnitCost !== null && (
+                            Stock removed: <strong>{stockUnits} {selectedProduct.stock_unit || 'unit'}s</strong>
+                            {perUnitPrice !== null && (
                               <>
-                                {' '}· ≈ <strong>{formatCurrency(perUnitCost)}</strong> per {selectedProduct.stock_unit || 'unit'} (estimate — final cost is calculated server-side)
+                                {' '}· ≈ <strong>{formatCurrency(perUnitPrice)}</strong> per {selectedProduct.stock_unit || 'unit'} (estimate — final price is calculated server-side)
                               </>
                             )}
                           </p>
                         );
                       })()}
+
+                    {selectedProduct && (
+                      <p className="text-xs text-ink-500">
+                        {selectedProduct.current_stock ?? 0} {selectedProduct.stock_unit || 'unit'}s currently in stock
+                      </p>
+                    )}
                   </div>
                 );
               })}
@@ -555,14 +617,14 @@ export default function NewPurchaseModal({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4 border-t border-slate-200 items-start">
             <div>
-              <label htmlFor="purchase-notes" className="block text-xs font-semibold text-ink-700 mb-1.5">
-                Notes / Receiving Remarks (optional)
+              <label htmlFor="sale-notes" className="block text-xs font-semibold text-ink-700 mb-1.5">
+                Notes <span className="text-ink-500 font-normal">(optional)</span>
               </label>
               <textarea
-                id="purchase-notes"
+                id="sale-notes"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="e.g. Delivered by lorry, batch #401..."
+                placeholder="e.g. Delivered same day"
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm min-h-[80px] resize-y"
               />
             </div>
@@ -575,7 +637,7 @@ export default function NewPurchaseModal({
                 {formatCurrency(grandTotal)}
               </div>
               <p className="text-xs text-ink-500">
-                {items.length} items to receive into inventory
+                {items.length} items sold
               </p>
             </div>
           </div>
@@ -596,7 +658,7 @@ export default function NewPurchaseModal({
             disabled={isSubmitting || items.length === 0}
             className="min-h-[44px] px-5 py-2 text-sm font-medium text-white bg-accent-600 hover:bg-accent-700 border border-transparent rounded-lg transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer"
           >
-            {isSubmitting ? 'Recording Purchase...' : 'Complete & Receive Stock'}
+            {isSubmitting ? 'Recording Sale...' : 'Complete Sale'}
           </button>
         </div>
       </div>

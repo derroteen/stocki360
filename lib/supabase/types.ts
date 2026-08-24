@@ -69,6 +69,11 @@ export interface PurchaseItem {
   unit_cost: number;
   line_total: number;
   created_at: string;
+  entry_mode?: 'individual' | 'package';
+  package_quantity?: number | null;
+  package_unit_snapshot?: string | null;
+  units_per_package_snapshot?: number | null;
+  package_unit_cost?: number | null;
   product?: {
     id: string;
     name: string;
@@ -98,11 +103,9 @@ export interface PurchaseWithItems extends Purchase {
   items: PurchaseItem[];
 }
 
-export interface CreatePurchaseItemPayload {
-  productId: string;
-  quantity: number;
-  unitCost: number;
-}
+export type CreatePurchaseItemPayload =
+  | { productId: string; entryMode: 'individual'; quantity: number; unitCost: number }
+  | { productId: string; entryMode: 'package'; packageQuantity: number; packageUnitCost: number };
 
 export interface CreatePurchasePayload {
   supplierId?: string | null;
@@ -110,5 +113,56 @@ export interface CreatePurchasePayload {
   purchaseDate?: string;
   notes?: string | null;
   items: CreatePurchaseItemPayload[];
-  idempotencyKey?: string;
+  idempotencyKey: string;
+}
+
+export interface SaleItem {
+  id: string;
+  sale_id: string;
+  product_id: string;
+  quantity: number;
+  unit_price: number;
+  line_total: number;
+  entry_mode: 'individual' | 'package';
+  package_quantity?: number | null;
+  package_unit_snapshot?: string | null;
+  units_per_package_snapshot?: number | null;
+  package_unit_price?: number | null;
+  created_at: string;
+  product?: {
+    id: string;
+    name: string;
+    sku: string;
+  } | null;
+}
+
+export interface Sale {
+  id: string;
+  business_id: string;
+  customer_name?: string | null;
+  customer_phone?: string | null;
+  reference_number?: string | null;
+  sale_date: string;
+  payment_method?: string | null;
+  notes?: string | null;
+  total_amount: number;
+  created_by?: string | null;
+  created_at: string;
+  updated_at: string;
+  sale_items?: SaleItem[];
+}
+
+export type CreateSaleItemPayload =
+  | { productId: string; entryMode: 'individual'; quantity: number; unitPrice: number }
+  | { productId: string; entryMode: 'package'; packageQuantity: number; packageUnitPrice: number };
+
+export interface CreateSalePayload {
+  customerName?: string | null;
+  customerPhone?: string | null;
+  referenceNumber?: string | null;
+  saleDate?: string;
+  paymentMethod?: string | null;
+  notes?: string | null;
+  items: CreateSaleItemPayload[];
+  idempotencyKey: string;
 }

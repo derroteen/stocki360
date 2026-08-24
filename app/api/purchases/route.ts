@@ -99,25 +99,22 @@ export async function POST(request: NextRequest) {
   const referenceNumber = toNonEmptyTrimmedString(body.referenceNumber);
   const notes = toNonEmptyTrimmedString(body.notes);
   const purchaseDateInput = toNonEmptyTrimmedString(body.purchaseDate);
-  const rawItems = Array.isArray(body.items) ? body.items : [];
+  const idempotencyKey = toNonEmptyTrimmedString(body.idempotencyKey);
+  const rawItems = Array.isArray(body.items) ? (body.items as any[]) : [];
 
-  // Validate items
-  if (rawItems.length === 0) {
-    return NextResponse.json(
-      { error: 'At least one purchase item is required.' },
-      { status: 400 }
-    );
+  if (!idempotencyKey || !uuidPattern.test(idempotencyKey)) {
+    return NextResponse.json({ error: 'A valid idempotency key is required.' }, { status: 400 });
   }
 
+  // Parse items – each item may include entryMode: 'individual' or 'package'
   const parsedItems: CreatePurchaseItemPayload[] = [];
   const seenProductIds = new Set<string>();
 
   for (let i = 0; i < rawItems.length; i++) {
     const item = rawItems[i];
     const productId = toNonEmptyTrimmedString(item?.productId);
-    const quantity = Number(item?.quantity);
-    const unitCost = Number(item?.unitCost);
 
+    // Basic product-id validation
     if (!productId || !uuidPattern.test(productId)) {
       return NextResponse.json(
         { error: `Item #${i + 1}: Invalid or missing product ID.` },
@@ -133,142 +130,111 @@ export async function POST(request: NextRequest) {
     }
     seenProductIds.add(productId);
 
-    if (!Number.isFinite(quantity) || !Number.isInteger(quantity) || quantity <= 0) {
-      return NextResponse.json(
-        { error: `Item #${i + 1}: Quantity must be a whole positive number.` },
-        { status: 400 }
-      );
-    }
+    const entryMode = String(item?.entryMode ?? 'individual').trim().toLowerCase();
 
-    if (!Number.isFinite(unitCost) || unitCost < 0) {
-      return NextResponse.json(
-        { error: `Item #${i + 1}: Unit cost cannot be negative.` },
-        { status: 400 }
-      );
-    }
+    // ------- individual mode -------
+    if (entryMode === 'individual') {
+      const quantity = Number(item?.quantity);
+      const unitCost = Number(item?.unitCost);
 
-    parsedItems.push({
-      productId,
-      quantity,
-      unitCost,
-    });
+      if (
+        !Number.isFinite(quantity) ||
+        !Number.isInteger(quantity) ||
+        quantity <= 0
+      ) {
+        return NextResponse.json(
+          { error: `Item #${i + 1}: Quantity must be a whole positive number.` },
+          { status: 400 }
+        );
+      }
+
+      if (!Number.isFinite(unitCost) || unitCost < 0) {
+        return NextResponse.json(
+          { error: `Item #${i + 1}: Unit cost cannot be negative.` },
+          { status: 400 }
+        );
+      }
+
+      parsedItems.push({
+        productId,
+        entryMode: 'individual' as const,
+        quantity,
+        unitCost,
+      });
+    }
+    // ------- package mode -------
+    else {
+      // package mode: expect packageQuantity and packageUnitCost
+      const packageQuantity = Number(item?.packageQuantity);
+      const packageUnitCost = Number(item?.packageUnitCost);
+
+      if (
+        !Number.isFinite(packageQuantity) ||
+        !Number.isInteger(packageQuantity) ||
+        packageQuantity <= 0
+      ) {
+        return NextResponse.json(
+          { error: `Item #${i + 1}: packageQuantity must be a whole positive number.` },
+          { status: 400 }
+        );
+      }
+
+      if (!Number.isFinite(packageUnitCost) || packageUnitCost < 0) {
+        return NextResponse.json(
+          { error: `Item #${i + 1}: packageUnitCost must be a non‑negative number.` },
+          { status: 400 }
+        );
+      }
+
+      parsedItems.push({
+        productId,
+        entryMode: 'package' as const,
+        packageQuantity,
+        packageUnitCost,
+      });
+    }
   }
 
   const activeBusinessId = resolution.context.businessId;
 
-  // Validate supplier if provided
   if (supplierId) {
     if (!uuidPattern.test(supplierId)) {
       return NextResponse.json({ error: 'Invalid supplier ID.' }, { status: 400 });
     }
-
-    const { data: supplier, error: supplierErr } = await supabase
-      .from('suppliers')
-      .select('id, business_id, is_active')
-      .eq('id', supplierId)
-      .eq('business_id', activeBusinessId)
-      .single();
-
-    if (supplierErr || !supplier) {
-      return NextResponse.json({ error: 'Supplier not found for active business.' }, { status: 404 });
-    }
   }
-
-  // Validate all products belong to active business and are active
-  const productIds = parsedItems.map((item) => item.productId);
-  const { data: products, error: productsErr } = await supabase
-    .from('products')
-    .select('id, business_id, is_active, name')
-    .in('id', productIds)
-    .eq('business_id', activeBusinessId);
-
-  if (productsErr || !products || products.length !== productIds.length) {
-    return NextResponse.json(
-      { error: 'One or more products were not found in this business.' },
-      { status: 400 }
-    );
-  }
-
-  const archivedProduct = products.find((p) => !p.is_active);
-  if (archivedProduct) {
-    return NextResponse.json(
-      { error: `Cannot receive stock for archived product "${archivedProduct.name}". Restore it first.` },
-      { status: 400 }
-    );
-  }
-
-  // Calculate totals server-side (do not trust client total_amount)
-  const totalAmount = parsedItems.reduce(
-    (sum, item) => sum + item.quantity * item.unitCost,
-    0
-  );
 
   const purchaseDate = purchaseDateInput ? new Date(purchaseDateInput).toISOString() : new Date().toISOString();
 
-  // 1) Create the Purchase record
-  const { data: purchaseData, error: purchaseErr } = await supabase
-    .from('purchases')
-    .insert({
-      business_id: activeBusinessId,
-      supplier_id: supplierId || null,
-      reference_number: referenceNumber || null,
-      purchase_date: purchaseDate,
-      notes: notes || null,
-      total_amount: Math.round(totalAmount * 100) / 100,
-      created_by: resolution.context.userId,
-    })
-    .select('id')
-    .single();
+  const { data: purchaseId, error } = await supabase.rpc('create_purchase_with_items', {
+    p_business_id: activeBusinessId,
+    p_supplier_id: supplierId || null,
+    p_reference_number: referenceNumber || null,
+    p_purchase_date: purchaseDate,
+    p_notes: notes || null,
+    p_items: parsedItems.map((item) => {
+      const base = {
+        product_id: item.productId,
+        entry_mode: item.entryMode,
+      };
+      if (item.entryMode === 'individual') {
+        return {
+          ...base,
+          quantity: item.quantity,
+          unit_cost: item.unitCost,
+        };
+      }
+      // package mode
+      return {
+        ...base,
+        package_quantity: item.packageQuantity,
+        package_unit_cost: item.packageUnitCost,
+      };
+    }),
+    p_idempotency_key: idempotencyKey,
+  });
 
-  if (purchaseErr || !purchaseData) {
-    return NextResponse.json(
-      { error: purchaseErr?.message ?? 'Failed to create purchase record.' },
-      { status: 400 }
-    );
-  }
-
-  const purchaseId = purchaseData.id;
-
-  // 2) Create the Purchase Items
-  const itemsToInsert = parsedItems.map((item) => ({
-    purchase_id: purchaseId,
-    product_id: item.productId,
-    quantity: item.quantity,
-    unit_cost: Math.round(item.unitCost * 100) / 100,
-  }));
-
-  const { error: itemsErr } = await supabase.from('purchase_items').insert(itemsToInsert);
-
-  if (itemsErr) {
-    return NextResponse.json(
-      { error: `Failed to insert purchase items: ${itemsErr.message}` },
-      { status: 400 }
-    );
-  }
-
-  // 3) Record 'in' stock movements for each item using the authoritative stock movement RPC
-  // The note references the purchase and reference number for clear inventory auditing.
-  const notePrefix = referenceNumber
-    ? `Purchase Ref: ${referenceNumber}`
-    : `Purchase #${purchaseId.slice(0, 8)}`;
-
-  for (const item of parsedItems) {
-    const itemMovementKey = crypto.randomUUID();
-    const { error: movementErr } = await supabase.rpc('record_stock_movement', {
-      p_product_id: item.productId,
-      p_movement_type: 'in',
-      p_quantity: item.quantity,
-      p_note: notePrefix,
-      p_idempotency_key: itemMovementKey,
-    });
-
-    if (movementErr) {
-      console.error(
-        `Error recording stock movement for product ${item.productId} in purchase ${purchaseId}:`,
-        movementErr
-      );
-      // We log but continue with remaining items so inventory increments wherever possible
-    }
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
   return NextResponse.json({ ok: true, purchaseId });

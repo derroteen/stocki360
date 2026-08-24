@@ -110,3 +110,11 @@ export async function resolveActiveBusinessContext(
 export function canWriteProducts(role: BusinessRole): boolean {
   return PRODUCT_WRITE_ROLES.includes(role);
 }
+
+// --- Add to lib/supabase/business-context.ts, near PRODUCT_WRITE_ROLES ---
+
+export const SALE_WRITE_ROLES: BusinessRole[] = ['owner', 'admin', 'storekeeper', 'cashier'];
+
+export function canWriteSales(role: BusinessRole): boolean {
+  return SALE_WRITE_ROLES.includes(role);
+}
