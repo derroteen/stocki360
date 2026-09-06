@@ -181,6 +181,7 @@ export async function POST(request: NextRequest) {
   const activeBusinessId = resolution.context.businessId;
   const saleDate = saleDateInput ? new Date(saleDateInput).toISOString() : new Date().toISOString();
 
+  console.error('[POST /api/sales] activeBusinessId:', activeBusinessId);
   const { data: saleId, error } = await supabase.rpc('create_sale_with_items', {
     p_business_id: activeBusinessId,
     p_customer_name: customerName,
