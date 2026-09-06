@@ -41,6 +41,7 @@ export default function DashboardNav() {
   const isCategoriesActive = pathname.startsWith('/dashboard/categories');
   const isSuppliersActive = pathname.startsWith('/dashboard/suppliers');
   const isSalesActive = pathname.startsWith('/dashboard/sales');
+  const isTeamActive = pathname.startsWith('/dashboard/team');
 
   useEffect(() => {
     let isMounted = true;
@@ -126,6 +127,16 @@ export default function DashboardNav() {
             }`}
           >
             Products
+          </Link>
+          <Link
+            href="/dashboard/team"
+            className={`px-3 sm:px-4 py-1.5 rounded-full transition-colors ${
+              isTeamActive
+                ? 'bg-accent-50 text-accent-700 font-semibold border border-accent-100 shadow-2xs'
+                : 'text-ink-500 hover:text-ink-900'
+            }`}
+          >
+            Team
           </Link>
           <Link
             href="/dashboard/purchases"
@@ -239,6 +250,17 @@ export default function DashboardNav() {
                 }`}
               >
                 Products
+              </Link>
+              <Link
+                href="/dashboard/team"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={`px-4 py-3 rounded-xl font-medium transition-colors ${
+                  isTeamActive
+                    ? 'bg-accent-50 text-accent-700'
+                    : 'text-ink-600 active:bg-slate-50'
+                }`}
+              >
+                Team
               </Link>
               <Link
                 href="/dashboard/purchases"
