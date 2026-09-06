@@ -74,8 +74,12 @@ export async function POST(request: NextRequest) {
   });
 
   if (movementErr) {
-    if (movementErr.message?.toLowerCase().includes('insufficient stock')) {
-      return NextResponse.json({ error: 'Insufficient stock.' }, { status: 400 });
+    const databaseError = movementErr.message?.toLowerCase() || '';
+    if (
+      databaseError.includes('insufficient stock') ||
+      databaseError.includes('quantity must be greater than zero')
+    ) {
+      return NextResponse.json({ error: movementErr.message }, { status: 400 });
     }
 
     return NextResponse.json({ error: 'Unable to record stock movement.' }, { status: 400 });

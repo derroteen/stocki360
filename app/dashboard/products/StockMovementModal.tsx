@@ -26,7 +26,6 @@ export default function StockMovementModal({
 
   const numQty = parseInt(quantity, 10) || 0;
   const currentStock = product.current_stock ?? 0;
-  const showNegativeWarning = movementType === 'out' && numQty > currentStock;
 
   const resetSubmissionKey = () => {
     setSubmissionKey(null);
@@ -39,6 +38,12 @@ export default function StockMovementModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (movementType === 'out' && numQty > currentStock) {
+      setError(`Not enough stock — only ${currentStock} available`);
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
@@ -75,8 +80,8 @@ export default function StockMovementModal({
       });
 
       if (!response.ok) {
-        const body = await response.json().catch(() => null);
-        throw new Error(body?.error || 'An error occurred while recording stock movement');
+          const body = await response.json().catch(() => null);
+          throw new Error(body?.error || body?.message || 'An error occurred while recording stock movement');
       }
 
       onSaved();
@@ -233,14 +238,6 @@ export default function StockMovementModal({
               </p>
             )}
           </div>
-
-          {/* Inline Warning for Stock Out below zero */}
-          {showNegativeWarning && (
-            <div className="p-3 text-xs text-warn-700 bg-warn-100 border border-warn-600/30 rounded-lg flex items-center gap-2">
-              <span>⚠️</span>
-              <span>This will take stock below zero</span>
-            </div>
-          )}
 
           {/* Note Input */}
           <div>
