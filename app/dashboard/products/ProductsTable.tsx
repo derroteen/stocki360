@@ -7,6 +7,7 @@ import { ProductStockLevel, Category, Supplier } from '@/lib/supabase/types';
 import { getStockStatus } from '@/lib/stock-alerts';
 import ProductModal from './ProductModal';
 import StockMovementModal from './StockMovementModal';
+import MovementHistoryModal from './MovementHistoryModal';
 
 interface ProductsTableProps {
   active: ProductStockLevel[];
@@ -28,6 +29,7 @@ export default function ProductsTable({ active, archived, allCategories, allSupp
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<ProductStockLevel | null>(null);
   const [movementProduct, setMovementProduct] = useState<ProductStockLevel | null>(null);
+  const [historyProduct, setHistoryProduct] = useState<ProductStockLevel | null>(null);
   const [view, setView] = useState<ProductView>('active');
   const [restoreLoadingId, setRestoreLoadingId] = useState<string | null>(null);
   const [restoreError, setRestoreError] = useState<string | null>(null);
@@ -281,16 +283,28 @@ export default function ProductsTable({ active, archived, allCategories, allSupp
                     </td>
                     <td className="py-4 px-4 text-right">
                       {view === 'active' ? (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setMovementProduct(product);
-                          }}
-                          className="min-h-[44px] px-3 py-1.5 text-xs font-medium text-accent-700 bg-accent-50 hover:bg-accent-100 border border-accent-100 rounded-lg transition-colors inline-flex items-center gap-1 cursor-pointer"
-                        >
-                          Record movement
-                        </button>
+                        <div className="inline-flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setHistoryProduct(product);
+                            }}
+                            className="min-h-[44px] px-3 py-1.5 text-xs font-medium text-ink-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-lg transition-colors inline-flex items-center gap-1 cursor-pointer"
+                          >
+                            History
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setMovementProduct(product);
+                            }}
+                            className="min-h-[44px] px-3 py-1.5 text-xs font-medium text-accent-700 bg-accent-50 hover:bg-accent-100 border border-accent-100 rounded-lg transition-colors inline-flex items-center gap-1 cursor-pointer"
+                          >
+                            Record movement
+                          </button>
+                        </div>
                       ) : (
                         <button
                           type="button"
@@ -374,16 +388,28 @@ export default function ProductsTable({ active, archived, allCategories, allSupp
                       </span>
                     </div>
                     {view === 'active' ? (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setMovementProduct(product);
-                        }}
-                        className="min-h-[44px] px-3 py-1.5 text-xs font-medium text-accent-700 bg-accent-50 hover:bg-accent-100 border border-accent-100 rounded-lg transition-colors cursor-pointer"
-                      >
-                        Record movement
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setHistoryProduct(product);
+                          }}
+                          className="min-h-[44px] px-3 py-1.5 text-xs font-medium text-ink-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-lg transition-colors cursor-pointer"
+                        >
+                          History
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setMovementProduct(product);
+                          }}
+                          className="min-h-[44px] px-3 py-1.5 text-xs font-medium text-accent-700 bg-accent-50 hover:bg-accent-100 border border-accent-100 rounded-lg transition-colors cursor-pointer"
+                        >
+                          Record movement
+                        </button>
+                      </div>
                     ) : (
                       <button
                         type="button"
@@ -423,6 +449,13 @@ export default function ProductsTable({ active, archived, allCategories, allSupp
           onSaved={() => {
             handleSaveOrDelete();
           }}
+        />
+      )}
+
+      {historyProduct && (
+        <MovementHistoryModal
+          product={historyProduct}
+          onClose={() => setHistoryProduct(null)}
         />
       )}
     </div>
