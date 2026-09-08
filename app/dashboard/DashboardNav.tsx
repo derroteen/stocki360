@@ -91,6 +91,12 @@ export default function DashboardNav() {
 
     setAvatarInitial('U');
 
+    try {
+      await fetch('/api/logout', { method: 'POST' });
+    } catch (error) {
+      console.error('Unable to clear active business cookie during logout:', error);
+    }
+
     // Refresh auth-sensitive server components after redirecting to the login page.
     router.replace('/login');
     router.refresh();
