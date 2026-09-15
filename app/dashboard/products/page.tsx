@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import ProductsTable from './ProductsTable';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
-import { ProductStockLevel, Category, Supplier } from '@/lib/supabase/types';
+import { ProductStockLevel, Category, Supplier, ProductBarcode } from '@/lib/supabase/types';
 import { resolveActiveBusinessContext } from '@/lib/supabase/business-context';
 
 export const dynamic = 'force-dynamic';
@@ -38,13 +38,15 @@ export default async function ProductsPage() {
   let archivedProducts: ProductStockLevel[] = [];
   let categories: Category[] = [];
   let suppliers: Supplier[] = [];
+  let barcodes: ProductBarcode[] = [];
 
   try {
     const [
       { data: stockLevels },
       { data: productStates },
       { data: categoriesData },
-      { data: suppliersData }
+      { data: suppliersData },
+      { data: barcodesData },
     ] = await Promise.all([
       supabase
         .from('product_stock_levels')
@@ -63,7 +65,11 @@ export default async function ProductsPage() {
         .from('suppliers')
         .select('*')
         .eq('business_id', activeBusinessId)
-        .order('name', { ascending: true })
+        .order('name', { ascending: true }),
+      supabase
+        .from('product_barcodes')
+        .select('id,product_id,barcode,entry_mode,label')
+        .eq('business_id', activeBusinessId),
     ]);
 
     if (stockLevels && productStates) {
@@ -89,6 +95,10 @@ export default async function ProductsPage() {
     if (suppliersData) {
       suppliers = suppliersData;
     }
+
+    if (barcodesData) {
+      barcodes = barcodesData as ProductBarcode[];
+    }
   } catch (err) {
     console.error('Error loading products:', err);
   }
@@ -106,6 +116,7 @@ export default async function ProductsPage() {
       allSuppliers={suppliers}
       activeCategories={activeCategories}
       activeSuppliers={activeSuppliers}
+      barcodes={barcodes}
     />
   );
 }

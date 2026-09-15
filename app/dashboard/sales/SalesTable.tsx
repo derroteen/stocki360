@@ -2,16 +2,17 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Sale, ProductStockLevel } from '@/lib/supabase/types';
+import { Sale, ProductStockLevel, ProductBarcode } from '@/lib/supabase/types';
 import NewSaleModal from './NewSaleModal';
 import SaleDetailsModal from './SaleDetailsModal';
 
 interface SalesTableProps {
   sales: Sale[];
   activeProducts: ProductStockLevel[];
+  barcodes: ProductBarcode[];
 }
 
-export default function SalesTable({ sales, activeProducts }: SalesTableProps) {
+export default function SalesTable({ sales, activeProducts, barcodes }: SalesTableProps) {
   const router = useRouter();
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
   const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
@@ -279,6 +280,7 @@ export default function SalesTable({ sales, activeProducts }: SalesTableProps) {
         isOpen={isNewModalOpen}
         onClose={() => setIsNewModalOpen(false)}
         products={activeProducts}
+        barcodes={barcodes}
         onSuccess={handleSaveSuccess}
       />
 

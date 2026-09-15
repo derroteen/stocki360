@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
-import { Sale, ProductStockLevel } from '@/lib/supabase/types';
+import { Sale, ProductStockLevel, ProductBarcode } from '@/lib/supabase/types';
 import { resolveActiveBusinessContext } from '@/lib/supabase/business-context';
 import SalesTable from './SalesTable';
 
@@ -34,9 +34,10 @@ export default async function SalesPage() {
 
   let sales: Sale[] = [];
   let activeProducts: ProductStockLevel[] = [];
+  let barcodes: ProductBarcode[] = [];
 
   try {
-    const [{ data: salesData }, { data: stockLevels }, { data: activeProductRows }] = await Promise.all([
+    const [{ data: salesData }, { data: stockLevels }, { data: activeProductRows }, { data: barcodesData }] = await Promise.all([
       supabase
         .from('sales')
         .select(`
@@ -79,6 +80,10 @@ export default async function SalesPage() {
         .select('id')
         .eq('business_id', activeBusinessId)
         .eq('is_active', true),
+      supabase
+        .from('product_barcodes')
+        .select('id,product_id,barcode,entry_mode,label')
+        .eq('business_id', activeBusinessId),
     ]);
 
     if (salesData) {
@@ -89,9 +94,13 @@ export default async function SalesPage() {
       const activeIds = new Set((activeProductRows as Array<{ id: string }>).map((row) => row.id));
       activeProducts = (stockLevels as ProductStockLevel[]).filter((p) => activeIds.has(p.id));
     }
+
+    if (barcodesData) {
+      barcodes = barcodesData as ProductBarcode[];
+    }
   } catch {
     // Graceful fallback
   }
 
-  return <SalesTable sales={sales} activeProducts={activeProducts} />;
+  return <SalesTable sales={sales} activeProducts={activeProducts} barcodes={barcodes} />;
 }

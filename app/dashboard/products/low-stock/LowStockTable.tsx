@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ProductStockLevel, Category, Supplier } from '@/lib/supabase/types';
+import { ProductStockLevel, Category, Supplier, ProductBarcode } from '@/lib/supabase/types';
 import { getStockStatus, StockStatus, prioritizeLowStockProducts } from '@/lib/stock-alerts';
 import StockMovementModal from '../StockMovementModal';
 import ProductModal from '../ProductModal';
@@ -14,6 +14,7 @@ interface LowStockTableProps {
   allSuppliers: Supplier[];
   activeCategories: Category[];
   activeSuppliers: Supplier[];
+  barcodes: ProductBarcode[];
 }
 
 type AlertFilter = 'all' | 'out_of_stock' | 'low_stock';
@@ -24,6 +25,7 @@ export default function LowStockTable({
   allSuppliers,
   activeCategories,
   activeSuppliers,
+  barcodes,
 }: LowStockTableProps) {
   const router = useRouter();
   const [filter, setFilter] = useState<AlertFilter>('all');
@@ -325,6 +327,7 @@ export default function LowStockTable({
         isOpen={Boolean(editProduct)}
         onClose={() => setEditProduct(null)}
         product={editProduct}
+        barcodes={editProduct ? barcodes.filter((b) => b.product_id === editProduct.id) : []}
         onSaveSuccess={() => {
           setEditProduct(null);
           handleSaved();

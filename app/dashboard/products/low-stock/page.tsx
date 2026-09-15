@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
-import { ProductStockLevel, Category, Supplier } from '@/lib/supabase/types';
+import { ProductStockLevel, Category, Supplier, ProductBarcode } from '@/lib/supabase/types';
 import { resolveActiveBusinessContext } from '@/lib/supabase/business-context';
 import LowStockTable from './LowStockTable';
 
@@ -35,6 +35,7 @@ export default async function LowStockPage() {
   let lowStockProducts: ProductStockLevel[] = [];
   let categories: Category[] = [];
   let suppliers: Supplier[] = [];
+  let barcodes: ProductBarcode[] = [];
 
   try {
     // Single consolidated query batch reusing the existing product_stock_levels view
@@ -43,6 +44,7 @@ export default async function LowStockPage() {
       { data: activeProductRows },
       { data: categoriesData },
       { data: suppliersData },
+      { data: barcodesData },
     ] = await Promise.all([
       supabase
         .from('product_stock_levels')
@@ -63,6 +65,10 @@ export default async function LowStockPage() {
         .select('*')
         .eq('business_id', activeBusinessId)
         .order('name', { ascending: true }),
+      supabase
+        .from('product_barcodes')
+        .select('id,product_id,barcode,entry_mode,label')
+        .eq('business_id', activeBusinessId),
     ]);
 
     if (stockLevels && activeProductRows) {
@@ -76,6 +82,7 @@ export default async function LowStockPage() {
 
     if (categoriesData) categories = categoriesData;
     if (suppliersData) suppliers = suppliersData;
+    if (barcodesData) barcodes = barcodesData as ProductBarcode[];
   } catch (err) {
     console.error('Error loading low-stock products:', err);
   }
@@ -90,6 +97,7 @@ export default async function LowStockPage() {
       allSuppliers={suppliers}
       activeCategories={activeCategories}
       activeSuppliers={activeSuppliers}
+      barcodes={barcodes}
     />
   );
 }

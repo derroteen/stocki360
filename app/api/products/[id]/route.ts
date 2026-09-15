@@ -2,12 +2,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { canWriteProducts, resolveActiveBusinessContext } from '@/lib/supabase/business-context';
 
+type SupabaseServerClient = Awaited<ReturnType<typeof createSupabaseServerClient>>;
+
 interface RouteParams {
   params: Promise<{ id: string }>;
 }
 
 type ProductPayload = {
   sku: string;
+  // Legacy single-barcode column, superseded by product_barcodes. Only set
+  // when the caller explicitly sends it, so the new barcode-list UI (which
+  // never sends it) doesn't null out whatever was there before.
+  barcode?: string | null;
   name: string;
   cost_price: number;
   sell_price: number;
@@ -17,6 +23,14 @@ type ProductPayload = {
   stock_unit: string;
   package_unit?: string | null;
   units_per_package?: number | null;
+};
+
+type BarcodeEntryMode = 'individual' | 'package';
+
+type BarcodeInput = {
+  barcode: string;
+  entry_mode: BarcodeEntryMode;
+  label: string | null;
 };
 
 function toNonEmptyTrimmedString(value: unknown): string | null {
@@ -85,7 +99,7 @@ function validateProductInput(body: unknown): ProductPayload {
     }
   }
 
-  return {
+  const payload: ProductPayload = {
     sku,
     name,
     cost_price: toValidNonNegativeNumber(record.cost_price, 'Cost price'),
@@ -97,6 +111,117 @@ function validateProductInput(body: unknown): ProductPayload {
     package_unit: packageUnit,
     units_per_package: unitsPerPackage,
   };
+
+  if (Object.prototype.hasOwnProperty.call(record, 'barcode')) {
+    payload.barcode = toNonEmptyTrimmedString(record.barcode);
+  }
+
+  return payload;
+}
+
+// Skips blank rows and defaults an unrecognized entry_mode to 'individual'.
+// Package-mode barcodes are rejected when the product has no packaging
+// configured, so a scan can never resolve to an unsellable line.
+function validateBarcodesInput(body: unknown, unitsPerPackage: number | null): BarcodeInput[] {
+  const record = typeof body === 'object' && body !== null ? (body as Record<string, unknown>) : {};
+  const raw = record.barcodes;
+
+  if (raw === undefined || raw === null) {
+    return [];
+  }
+
+  if (!Array.isArray(raw)) {
+    throw new Error('Barcodes must be a list.');
+  }
+
+  const result: BarcodeInput[] = [];
+
+  for (const item of raw) {
+    if (typeof item !== 'object' || item === null) {
+      continue;
+    }
+
+    const itemRecord = item as Record<string, unknown>;
+    const barcode = toNonEmptyTrimmedString(itemRecord.barcode);
+    if (!barcode) {
+      continue;
+    }
+
+    const entryMode: BarcodeEntryMode = itemRecord.entry_mode === 'package' ? 'package' : 'individual';
+
+    if (entryMode === 'package' && !unitsPerPackage) {
+      throw new Error(`Barcode "${barcode}" is set to sell as a package, but this product has no package configured.`);
+    }
+
+    result.push({
+      barcode,
+      entry_mode: entryMode,
+      label: toNonEmptyTrimmedString(itemRecord.label),
+    });
+  }
+
+  return result;
+}
+
+function extractDuplicateBarcodeValue(details: string | null | undefined): string | null {
+  if (!details) {
+    return null;
+  }
+
+  const match = details.match(/=\([^,]+,\s*(.+?)\)\s*already exists\.?$/i);
+  return match ? match[1] : null;
+}
+
+// Replaces this product's product_barcodes rows with the submitted list.
+// business_id is always taken from the server-resolved context, never the client.
+async function syncProductBarcodes(
+  supabase: SupabaseServerClient,
+  productId: string,
+  businessId: string,
+  barcodes: BarcodeInput[]
+): Promise<NextResponse | null> {
+  const { error: deleteError } = await supabase
+    .from('product_barcodes')
+    .delete()
+    .eq('product_id', productId)
+    .eq('business_id', businessId);
+
+  if (deleteError) {
+    return NextResponse.json({ error: deleteError.message }, { status: 400 });
+  }
+
+  if (barcodes.length === 0) {
+    return null;
+  }
+
+  const rows = barcodes.map((b) => ({
+    business_id: businessId,
+    product_id: productId,
+    barcode: b.barcode,
+    entry_mode: b.entry_mode,
+    label: b.label,
+  }));
+
+  const { error: insertError } = await supabase.from('product_barcodes').insert(rows);
+
+  if (insertError) {
+    if (insertError.code === '23505') {
+      const duplicateValue = extractDuplicateBarcodeValue(insertError.details);
+      return NextResponse.json(
+        {
+          error: duplicateValue
+            ? `The barcode "${duplicateValue}" is already used by another product in your business.`
+            : 'One of these barcodes is already used by another product in your business.',
+          code: insertError.code,
+        },
+        { status: 409 }
+      );
+    }
+
+    return NextResponse.json({ error: insertError.message }, { status: 400 });
+  }
+
+  return null;
 }
 
 export async function PATCH(request: NextRequest, context: RouteParams) {
@@ -126,6 +251,13 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
     return NextResponse.json({ error: (error as Error).message }, { status: 400 });
   }
 
+  let barcodes: BarcodeInput[];
+  try {
+    barcodes = validateBarcodesInput(body, payload.units_per_package ?? null);
+  } catch (error) {
+    return NextResponse.json({ error: (error as Error).message }, { status: 400 });
+  }
+
   const { data, error } = await supabase
     .from('products')
     .update(payload)
@@ -136,8 +268,14 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
 
   if (error) {
     if (error.code === '23505') {
+      if (error.message.includes('products_business_barcode_uidx')) {
+        return NextResponse.json(
+          { error: 'This barcode is already used by another product in your business', code: error.code },
+          { status: 409 }
+        );
+      }
       return NextResponse.json(
-        { error: 'A product with this SKU already exists in this business.' },
+        { error: 'A product with this SKU already exists in this business.', code: error.code },
         { status: 409 }
       );
     }
@@ -147,6 +285,11 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
 
   if (!data || data.length === 0) {
     return NextResponse.json({ error: 'Product not found.' }, { status: 404 });
+  }
+
+  const barcodeSyncError = await syncProductBarcodes(supabase, id, resolution.context.businessId, barcodes);
+  if (barcodeSyncError) {
+    return barcodeSyncError;
   }
 
   return NextResponse.json({ ok: true });

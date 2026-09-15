@@ -29,6 +29,8 @@ export interface ProductRow {
   business_id: string;
   sku: string;
   name: string;
+  /** @deprecated superseded by the product_barcodes table (see ProductBarcode) — a product can now have multiple barcodes. Left declared for old data/callers, but new code should not read or write this. */
+  barcode: string | null;
   cost_price: number;
   sell_price: number;
   reorder_level: number;
@@ -38,12 +40,24 @@ export interface ProductRow {
   stock_unit: string;
   package_unit?: string | null;
   units_per_package?: number | null;
+  /** Cost of one full package. Optional — falls back to cost_price x units_per_package when absent. */
+  package_cost_price?: number | null;
+  /** Selling price of one full package. Optional — falls back to sell_price x units_per_package when absent. */
+  package_sell_price?: number | null;
   created_at: string;
 }
 
 export interface ProductStockLevel extends ProductRow {
   current_stock: number;
   is_low_stock: boolean;
+}
+
+export interface ProductBarcode {
+  id: string;
+  product_id: string;
+  barcode: string;
+  entry_mode: 'individual' | 'package';
+  label?: string | null;
 }
 
 export interface ProductDraft {

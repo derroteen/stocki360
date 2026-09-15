@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ProductStockLevel, Category, Supplier } from '@/lib/supabase/types';
+import { ProductStockLevel, Category, Supplier, ProductBarcode } from '@/lib/supabase/types';
 import { getStockStatus } from '@/lib/stock-alerts';
 import ProductModal from './ProductModal';
 import StockMovementModal from './StockMovementModal';
@@ -20,11 +20,13 @@ interface ProductsTableProps {
   activeCategories: Category[];
   /** Only active suppliers — passed to the product modal dropdown so archived items can't be selected. */
   activeSuppliers: Supplier[];
+  /** All barcodes for the business, across all products. */
+  barcodes: ProductBarcode[];
 }
 
 type ProductView = 'active' | 'archived';
 
-export default function ProductsTable({ active, archived, allCategories, allSuppliers, activeCategories, activeSuppliers }: ProductsTableProps) {
+export default function ProductsTable({ active, archived, allCategories, allSuppliers, activeCategories, activeSuppliers, barcodes }: ProductsTableProps) {
   const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<ProductStockLevel | null>(null);
@@ -35,6 +37,9 @@ export default function ProductsTable({ active, archived, allCategories, allSupp
   const [restoreError, setRestoreError] = useState<string | null>(null);
 
   const products = view === 'active' ? active : archived;
+
+  const getProductBarcodes = (productId: string) =>
+    barcodes.filter((b) => b.product_id === productId);
 
   const handleAddProduct = () => {
     setRestoreError(null);
@@ -219,7 +224,10 @@ export default function ProductsTable({ active, archived, allCategories, allSupp
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 text-ink-900">
-                {products.map((product) => (
+                {products.map((product) => {
+                  const productBarcodes = getProductBarcodes(product.id);
+
+                  return (
                   <tr
                     key={product.id}
                     onClick={view === 'active' ? () => handleEditProduct(product) : undefined}
@@ -231,6 +239,13 @@ export default function ProductsTable({ active, archived, allCategories, allSupp
                   >
                     <td className="py-4 px-4 font-mono text-xs text-ink-700 font-medium">
                       {product.sku}
+                      {productBarcodes.length > 0 && (
+                        <div className="font-mono text-xs text-ink-500 mt-0.5">
+                          {productBarcodes.length <= 2
+                            ? productBarcodes.map((b) => b.barcode).join(', ')
+                            : `${productBarcodes.length} barcodes`}
+                        </div>
+                      )}
                     </td>
                     <td className="py-4 px-4 font-medium text-ink-900">
                       {product.name}
@@ -317,14 +332,18 @@ export default function ProductsTable({ active, archived, allCategories, allSupp
                       )}
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>
 
           {/* Stacked Card Layout (screens < 640px) */}
           <div className="block sm:hidden space-y-3">
-            {products.map((product) => (
+            {products.map((product) => {
+              const productBarcodes = getProductBarcodes(product.id);
+
+              return (
               <div
                 key={product.id}
                 onClick={view === 'active' ? () => handleEditProduct(product) : undefined}
@@ -339,6 +358,13 @@ export default function ProductsTable({ active, archived, allCategories, allSupp
                     <span className="font-mono text-xs text-ink-500 block">
                       {product.sku}
                     </span>
+                    {productBarcodes.length > 0 && (
+                      <span className="font-mono text-xs text-ink-500 block">
+                        {productBarcodes.length <= 2
+                          ? productBarcodes.map((b) => b.barcode).join(', ')
+                          : `${productBarcodes.length} barcodes`}
+                      </span>
+                    )}
                     <h4 className="font-semibold text-ink-900 text-base">
                       {product.name}
                     </h4>
@@ -370,8 +396,8 @@ export default function ProductsTable({ active, archived, allCategories, allSupp
                   })()}
                 </div>
 
-                <div className="flex items-center justify-between text-sm pt-2 border-t border-slate-200/60">
-                  <div className="text-ink-700">
+                <div className="flex items-center justify-between gap-3 text-sm pt-2 border-t border-slate-200/60">
+                  <div className="text-ink-700 min-w-0 flex-1">
                     <span className="text-ink-500 text-xs block">Stock</span>
                     <span className="font-mono font-medium">{product.current_stock ?? 0} {product.stock_unit || 'unit'}s</span>
                     {product.package_unit && product.units_per_package && (
@@ -380,53 +406,53 @@ export default function ProductsTable({ active, archived, allCategories, allSupp
                       </span>
                     )}
                   </div>
-                  <div className="flex items-center gap-3">
-                    <div className="text-right">
-                      <span className="text-ink-500 text-xs block">Sell Price</span>
-                      <span className="font-semibold text-ink-900">
-                        {formatCurrency(product.sell_price)}
-                      </span>
-                    </div>
-                    {view === 'active' ? (
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setHistoryProduct(product);
-                          }}
-                          className="min-h-[44px] px-3 py-1.5 text-xs font-medium text-ink-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-lg transition-colors cursor-pointer"
-                        >
-                          History
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setMovementProduct(product);
-                          }}
-                          className="min-h-[44px] px-3 py-1.5 text-xs font-medium text-accent-700 bg-accent-50 hover:bg-accent-100 border border-accent-100 rounded-lg transition-colors cursor-pointer"
-                        >
-                          Record movement
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleRestore(product.id);
-                        }}
-                        disabled={restoreLoadingId === product.id}
-                        className="min-h-[44px] px-3 py-1.5 text-xs font-medium text-good-700 bg-good-100 hover:bg-good-200 border border-good-600/30 rounded-lg transition-colors disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        {restoreLoadingId === product.id ? 'Restoring...' : 'Restore'}
-                      </button>
-                    )}
+                  <div className="text-right shrink-0">
+                    <span className="text-ink-500 text-xs block">Sell Price</span>
+                    <span className="font-semibold text-ink-900">
+                      {formatCurrency(product.sell_price)}
+                    </span>
                   </div>
                 </div>
+
+                {view === 'active' ? (
+                  <div className="flex flex-col gap-2">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setHistoryProduct(product);
+                      }}
+                      className="min-h-[44px] w-full px-3 py-1.5 text-xs font-medium text-ink-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-lg transition-colors cursor-pointer"
+                    >
+                      History
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setMovementProduct(product);
+                      }}
+                      className="min-h-[44px] w-full px-3 py-1.5 text-xs font-medium text-accent-700 bg-accent-50 hover:bg-accent-100 border border-accent-100 rounded-lg transition-colors cursor-pointer"
+                    >
+                      Record movement
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRestore(product.id);
+                    }}
+                    disabled={restoreLoadingId === product.id}
+                    className="min-h-[44px] w-full px-3 py-1.5 text-xs font-medium text-good-700 bg-good-100 hover:bg-good-200 border border-good-600/30 rounded-lg transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {restoreLoadingId === product.id ? 'Restoring...' : 'Restore'}
+                  </button>
+                )}
               </div>
-            ))}
+              );
+            })}
           </div>
         </>
       )}
@@ -436,6 +462,7 @@ export default function ProductsTable({ active, archived, allCategories, allSupp
         isOpen={isModalOpen}
         onClose={handleCloseModal}
         product={selectedProduct}
+        barcodes={selectedProduct ? getProductBarcodes(selectedProduct.id) : []}
         onSaveSuccess={handleSaveOrDelete}
         categories={activeCategories}
         suppliers={activeSuppliers}

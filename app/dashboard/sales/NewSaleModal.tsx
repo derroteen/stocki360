@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { ProductStockLevel, CreateSaleItemPayload } from '@/lib/supabase/types';
+import { useState, useEffect, useRef } from 'react';
+import { ProductStockLevel, ProductBarcode, CreateSaleItemPayload } from '@/lib/supabase/types';
 
 interface NewSaleModalProps {
   isOpen: boolean;
   onClose: () => void;
   products: ProductStockLevel[];
+  barcodes: ProductBarcode[];
   onSuccess: () => void;
 }
 
@@ -34,6 +35,7 @@ export default function NewSaleModal({
   isOpen,
   onClose,
   products,
+  barcodes,
   onSuccess,
 }: NewSaleModalProps) {
   const [customerName, setCustomerName] = useState('');
@@ -49,6 +51,10 @@ export default function NewSaleModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [barcodeInput, setBarcodeInput] = useState('');
+  const [barcodeMessage, setBarcodeMessage] = useState<string | null>(null);
+  const barcodeInputRef = useRef<HTMLInputElement | null>(null);
+
   useEffect(() => {
     if (isOpen) {
       setError(null);
@@ -60,6 +66,9 @@ export default function NewSaleModal({
       setNotes('');
       setIdempotencyKey(crypto.randomUUID());
       setItems([emptyItem()]);
+      setBarcodeInput('');
+      setBarcodeMessage(null);
+      barcodeInputRef.current?.focus();
     }
   }, [isOpen]);
 
@@ -83,6 +92,104 @@ export default function NewSaleModal({
       return Math.floor(stock / prod.units_per_package);
     }
     return stock;
+  };
+
+  const handleBarcodeInputChange = (val: string) => {
+    setBarcodeInput(val);
+    if (barcodeMessage) setBarcodeMessage(null);
+  };
+
+  const handleBarcodeKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+
+    const raw = barcodeInput.trim();
+    if (!raw) return;
+
+    const matchRow = barcodes.find(
+      (b) => b.barcode.trim().toLowerCase() === raw.toLowerCase()
+    );
+    const match = matchRow ? getProduct(matchRow.product_id) : null;
+
+    if (!matchRow || !match) {
+      setBarcodeMessage('No product matches that barcode');
+      setBarcodeInput('');
+      barcodeInputRef.current?.focus();
+      return;
+    }
+
+    const existingIndex = items.findIndex((it) => it.productId === match.id);
+
+    if (existingIndex !== -1) {
+      const existing = items[existingIndex];
+      const mode = existing.entryMode;
+      const currentQty =
+        mode === 'package'
+          ? parseInt(existing.packageQuantity, 10) || 0
+          : parseInt(existing.quantity, 10) || 0;
+      const max = maxSellable(match.id, mode);
+
+      if (currentQty + 1 > max) {
+        setError(
+          mode === 'package'
+            ? `Item #${existingIndex + 1}: Only ${max} package(s) available in stock.`
+            : `Item #${existingIndex + 1}: Only ${max} available in stock.`
+        );
+        setBarcodeInput('');
+        barcodeInputRef.current?.focus();
+        return;
+      }
+
+      setError(null);
+      setItems((prev) => {
+        const updated = [...prev];
+        const it = updated[existingIndex];
+        updated[existingIndex] =
+          mode === 'package'
+            ? { ...it, packageQuantity: String(currentQty + 1) }
+            : { ...it, quantity: String(currentQty + 1) };
+        return updated;
+      });
+      setBarcodeInput('');
+      barcodeInputRef.current?.focus();
+      return;
+    }
+
+    setError(null);
+    setItems((prev) => {
+      const newItem: FormItem =
+        matchRow.entry_mode === 'package'
+          ? {
+              productId: match.id,
+              entryMode: 'package',
+              quantity: '1',
+              unitPrice: '',
+              packageQuantity: '1',
+              packageUnitPrice:
+                match.package_sell_price != null
+                  ? String(match.package_sell_price)
+                  : match.sell_price != null && match.units_per_package
+                  ? String(match.sell_price * match.units_per_package)
+                  : '',
+            }
+          : {
+              productId: match.id,
+              entryMode: 'individual',
+              quantity: '1',
+              unitPrice: match.sell_price != null ? String(match.sell_price) : '',
+              packageQuantity: '1',
+              packageUnitPrice: '',
+            };
+      const emptyIndex = prev.findIndex((it) => it.productId === '');
+      if (emptyIndex !== -1) {
+        const updated = [...prev];
+        updated[emptyIndex] = newItem;
+        return updated;
+      }
+      return [...prev, newItem];
+    });
+    setBarcodeInput('');
+    barcodeInputRef.current?.focus();
   };
 
   const handleProductChange = (index: number, newProductId: string) => {
@@ -418,6 +525,26 @@ export default function NewSaleModal({
               <span className="text-xs text-ink-500">
                 {items.length} {items.length === 1 ? 'item' : 'items'}
               </span>
+            </div>
+
+            <div>
+              <label htmlFor="sale-barcode-scan" className="block text-xs font-semibold text-ink-700 mb-1.5">
+                Scan barcode
+              </label>
+              <input
+                id="sale-barcode-scan"
+                ref={barcodeInputRef}
+                type="text"
+                autoFocus
+                value={barcodeInput}
+                onChange={(e) => handleBarcodeInputChange(e.target.value)}
+                onKeyDown={handleBarcodeKeyDown}
+                placeholder="Scan or type a barcode, then press Enter"
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-accent-500 focus:border-accent-500 min-h-[44px]"
+              />
+              {barcodeMessage && (
+                <p className="text-xs text-warn-700 mt-1">{barcodeMessage}</p>
+              )}
             </div>
 
             <div className="space-y-3">
