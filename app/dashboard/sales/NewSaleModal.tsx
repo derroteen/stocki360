@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { ProductStockLevel, ProductBarcode, CreateSaleItemPayload } from '@/lib/supabase/types';
-import CameraScanner from './CameraScanner';
+import CameraScanner, { ScanResult } from './CameraScanner';
 
 interface NewSaleModalProps {
   isOpen: boolean;
@@ -131,9 +131,9 @@ export default function NewSaleModal({
 
   // Shared by the barcode text input (on Enter) and the camera scanner, so
   // the lookup/increment/add logic can't drift between the two entry paths.
-  const handleBarcodeScan = (rawValue: string) => {
+  // Returns what happened so each caller can give its own feedback.
+  const handleBarcodeScan = (rawValue: string): ScanResult => {
     const raw = rawValue.trim();
-    if (!raw) return;
 
     const matchRow = barcodes.find(
       (b) => b.barcode.trim().toLowerCase() === raw.toLowerCase()
@@ -144,7 +144,7 @@ export default function NewSaleModal({
       setBarcodeMessage('No product matches that barcode');
       setBarcodeInput('');
       barcodeInputRef.current?.focus();
-      return;
+      return { status: 'not_found' };
     }
 
     const existingIndex = items.findIndex((it) => it.productId === match.id);
@@ -166,7 +166,7 @@ export default function NewSaleModal({
         );
         setBarcodeInput('');
         barcodeInputRef.current?.focus();
-        return;
+        return { status: 'stock_limit', productName: match.name, available: max };
       }
 
       setError(null);
@@ -181,7 +181,7 @@ export default function NewSaleModal({
       });
       setBarcodeInput('');
       barcodeInputRef.current?.focus();
-      return;
+      return { status: 'incremented', productName: match.name, quantity: currentQty + 1 };
     }
 
     setError(null);
@@ -219,11 +219,13 @@ export default function NewSaleModal({
     });
     setBarcodeInput('');
     barcodeInputRef.current?.focus();
+    return { status: 'added', productName: match.name, quantity: 1 };
   };
 
   const handleBarcodeKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key !== 'Enter') return;
     e.preventDefault();
+    if (!barcodeInput.trim()) return;
     handleBarcodeScan(barcodeInput);
   };
 
@@ -316,6 +318,17 @@ export default function NewSaleModal({
   });
 
   const grandTotal = lineTotals.reduce((sum, val) => sum + val, 0);
+
+  // Total quantity across all lines that actually have a product selected —
+  // used for the camera scanner's running tally.
+  const totalQuantity = items.reduce((sum, item) => {
+    if (!item.productId) return sum;
+    const qty =
+      item.entryMode === 'package'
+        ? parseInt(item.packageQuantity, 10) || 0
+        : parseInt(item.quantity, 10) || 0;
+    return sum + qty;
+  }, 0);
 
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat('en-KE', {
@@ -855,6 +868,7 @@ export default function NewSaleModal({
         <CameraScanner
           onScan={handleBarcodeScan}
           onClose={() => setShowCameraScanner(false)}
+          totalQuantity={totalQuantity}
         />
       )}
     </div>

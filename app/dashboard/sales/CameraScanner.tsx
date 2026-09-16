@@ -2,9 +2,17 @@
 
 import { useEffect, useRef, useState } from 'react';
 
+export type ScanResult =
+  | { status: 'added'; productName: string; quantity: number }
+  | { status: 'incremented'; productName: string; quantity: number }
+  | { status: 'not_found' }
+  | { status: 'stock_limit'; productName: string; available: number };
+
 interface CameraScannerProps {
-  onScan: (barcode: string) => void;
+  onScan: (barcode: string) => ScanResult;
   onClose: () => void;
+  /** Current total quantity across all lines in the sale, for the running tally. */
+  totalQuantity: number;
 }
 
 interface DetectedBarcode {
@@ -21,16 +29,22 @@ interface BarcodeDetectorConstructor {
 
 type ScannerStatus = 'requesting' | 'active' | 'unsupported' | 'permission-denied';
 
-const SCAN_DEBOUNCE_MS = 2000;
+interface Banner {
+  tone: 'good' | 'warn';
+  text: string;
+}
 
-export default function CameraScanner({ onScan, onClose }: CameraScannerProps) {
+const SCAN_DEBOUNCE_MS = 2000;
+const BANNER_DURATION_MS = 1500;
+
+export default function CameraScanner({ onScan, onClose, totalQuantity }: CameraScannerProps) {
   const [status, setStatus] = useState<ScannerStatus>('requesting');
-  const [showFlash, setShowFlash] = useState(false);
+  const [banner, setBanner] = useState<Banner | null>(null);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const rafRef = useRef<number | null>(null);
-  const flashTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const bannerTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastScanRef = useRef<{ value: string; time: number } | null>(null);
 
   // Keep the latest onScan without making the camera-setup effect below
@@ -41,12 +55,35 @@ export default function CameraScanner({ onScan, onClose }: CameraScannerProps) {
     onScanRef.current = onScan;
   }, [onScan]);
 
-  const triggerFlash = () => {
-    setShowFlash(true);
-    if (flashTimeoutRef.current) {
-      clearTimeout(flashTimeoutRef.current);
+  const showBanner = (result: ScanResult) => {
+    let next: Banner;
+    let vibrationPattern: number | number[];
+
+    switch (result.status) {
+      case 'added':
+      case 'incremented':
+        next = { tone: 'good', text: `${result.productName} — qty ${result.quantity}` };
+        vibrationPattern = 100;
+        break;
+      case 'not_found':
+        next = { tone: 'warn', text: 'No product matches that barcode' };
+        vibrationPattern = [60, 60, 60];
+        break;
+      case 'stock_limit':
+        next = { tone: 'warn', text: `${result.productName} — only ${result.available} left` };
+        vibrationPattern = [60, 60, 60];
+        break;
     }
-    flashTimeoutRef.current = setTimeout(() => setShowFlash(false), 400);
+
+    if (navigator.vibrate) {
+      navigator.vibrate(vibrationPattern);
+    }
+
+    setBanner(next);
+    if (bannerTimeoutRef.current) {
+      clearTimeout(bannerTimeoutRef.current);
+    }
+    bannerTimeoutRef.current = setTimeout(() => setBanner(null), BANNER_DURATION_MS);
   };
 
   useEffect(() => {
@@ -93,11 +130,8 @@ export default function CameraScanner({ onScan, onClose }: CameraScannerProps) {
               // Ignore the same barcode re-firing while it's still in frame.
               if (!last || last.value !== value || now - last.time > SCAN_DEBOUNCE_MS) {
                 lastScanRef.current = { value, time: now };
-                onScanRef.current(value);
-                if (navigator.vibrate) {
-                  navigator.vibrate(100);
-                }
-                triggerFlash();
+                const result = onScanRef.current(value);
+                showBanner(result);
               }
             }
           } catch {
@@ -125,9 +159,9 @@ export default function CameraScanner({ onScan, onClose }: CameraScannerProps) {
         rafRef.current = null;
       }
 
-      if (flashTimeoutRef.current) {
-        clearTimeout(flashTimeoutRef.current);
-        flashTimeoutRef.current = null;
+      if (bannerTimeoutRef.current) {
+        clearTimeout(bannerTimeoutRef.current);
+        bannerTimeoutRef.current = null;
       }
 
       // Stop every track so the camera indicator light actually turns off.
@@ -152,86 +186,98 @@ export default function CameraScanner({ onScan, onClose }: CameraScannerProps) {
 
   return (
     <div className="fixed inset-0 z-[60] bg-black flex flex-col" role="dialog" aria-modal="true">
-      {status === 'unsupported' && (
-        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center gap-4">
-          <p className="text-white text-sm max-w-xs">
-            Camera scanning isn&apos;t supported in this browser. Try Chrome on Android, or use a USB scanner.
-          </p>
-          <button
-            type="button"
-            onClick={onClose}
-            className="min-h-[44px] px-5 py-2 text-sm font-medium text-ink-900 bg-white rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
-          >
-            Close
-          </button>
-        </div>
-      )}
-
-      {status === 'permission-denied' && (
-        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center gap-4">
-          <p className="text-white text-sm max-w-xs">
-            Camera permission is needed to scan. You can still type the barcode manually.
-          </p>
-          <button
-            type="button"
-            onClick={onClose}
-            className="min-h-[44px] px-5 py-2 text-sm font-medium text-ink-900 bg-white rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
-          >
-            Close
-          </button>
-        </div>
-      )}
-
-      {(status === 'requesting' || status === 'active') && (
-        <>
-          <video
-            ref={videoRef}
-            autoPlay
-            playsInline
-            muted
-            className="absolute inset-0 w-full h-full object-cover"
-          />
-
-          {/* Framing guide */}
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="w-[75%] max-w-md aspect-[3/2] border-4 border-white/80 rounded-xl" />
-          </div>
-
-          <div className="absolute top-4 left-0 right-0 flex items-center justify-center px-4 pointer-events-none">
-            <p className="text-white text-xs bg-black/40 px-3 py-1.5 rounded-full">
-              Point the camera at a barcode
+      <div className="flex-1 relative overflow-hidden">
+        {status === 'unsupported' && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center gap-4">
+            <p className="text-white text-sm max-w-xs">
+              Camera scanning isn&apos;t supported in this browser. Try Chrome on Android, or use a USB scanner.
             </p>
           </div>
+        )}
 
-          {showFlash && (
-            <div className="absolute inset-0 flex items-center justify-center bg-white/20 pointer-events-none">
-              <div className="w-20 h-20 rounded-full bg-good-500/90 flex items-center justify-center">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="w-10 h-10 text-white"
-                >
-                  <polyline points="20 6 9 17 4 12"></polyline>
-                </svg>
-              </div>
+        {status === 'permission-denied' && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center gap-4">
+            <p className="text-white text-sm max-w-xs">
+              Camera permission is needed to scan. You can still type the barcode manually.
+            </p>
+          </div>
+        )}
+
+        {(status === 'requesting' || status === 'active') && (
+          <>
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+
+            {/* Framing guide */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="w-[75%] max-w-md aspect-[3/2] border-4 border-white/80 rounded-xl" />
             </div>
-          )}
-        </>
-      )}
 
-      <button
-        type="button"
-        onClick={onClose}
-        aria-label="Close scanner"
-        className="absolute top-4 right-4 min-h-[44px] min-w-[44px] flex items-center justify-center text-white bg-black/50 hover:bg-black/70 rounded-full transition-colors cursor-pointer z-10"
-      >
-        ✕
-      </button>
+            {/* Running tally — the main signal that scans are landing */}
+            <div className="absolute top-4 left-0 right-0 flex items-center justify-center px-4 pointer-events-none">
+              <p className="text-white text-sm font-semibold bg-black/50 px-4 py-2 rounded-full">
+                {totalQuantity} {totalQuantity === 1 ? 'item' : 'items'} in this sale
+              </p>
+            </div>
+
+            {banner && (
+              <div className="absolute top-16 left-4 right-4 flex justify-center pointer-events-none">
+                <div
+                  className={`max-w-sm w-full rounded-xl px-4 py-3 flex items-center gap-2 shadow-lg text-white ${
+                    banner.tone === 'good' ? 'bg-good-600' : 'bg-warn-500'
+                  }`}
+                >
+                  {banner.tone === 'good' ? (
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="3"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="w-5 h-5 shrink-0"
+                    >
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                  ) : (
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="w-5 h-5 shrink-0"
+                    >
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <line x1="12" y1="8" x2="12" y2="12"></line>
+                      <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                  )}
+                  <span className="text-sm font-semibold">{banner.text}</span>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      <div className="shrink-0 p-4">
+        <button
+          type="button"
+          onClick={onClose}
+          className="w-full min-h-[56px] bg-accent-500 hover:bg-accent-600 text-white text-base font-semibold rounded-xl shadow-lg transition-colors cursor-pointer"
+        >
+          Done
+        </button>
+      </div>
     </div>
   );
 }
