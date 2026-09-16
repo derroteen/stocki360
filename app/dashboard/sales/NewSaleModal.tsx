@@ -71,7 +71,15 @@ export default function NewSaleModal({
       setBarcodeInput('');
       setBarcodeMessage(null);
       setShowCameraScanner(false);
-      barcodeInputRef.current?.focus();
+
+      // Only autofocus on devices with a precise pointer (i.e. a mouse/USB
+      // scanner) — on touch devices this pops the on-screen keyboard and
+      // buries half the form the moment the modal opens.
+      const isFinePointer =
+        typeof window !== 'undefined' && window.matchMedia('(pointer: fine)').matches;
+      if (isFinePointer) {
+        barcodeInputRef.current?.focus();
+      }
     }
   }, [isOpen]);
 
@@ -584,11 +592,15 @@ export default function NewSaleModal({
                   id="sale-barcode-scan"
                   ref={barcodeInputRef}
                   type="text"
-                  autoFocus
                   value={barcodeInput}
                   onChange={(e) => handleBarcodeInputChange(e.target.value)}
                   onKeyDown={handleBarcodeKeyDown}
                   placeholder="Scan or type a barcode, then press Enter"
+                  // While the camera overlay is open, block the virtual keyboard
+                  // even if this input somehow receives focus — belt-and-braces
+                  // alongside the blur() call on the camera button.
+                  inputMode={showCameraScanner ? 'none' : undefined}
+                  readOnly={showCameraScanner}
                   className="flex-1 min-w-0 px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-accent-500 focus:border-accent-500 min-h-[44px]"
                 />
                 <button
