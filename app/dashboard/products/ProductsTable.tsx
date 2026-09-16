@@ -97,6 +97,11 @@ export default function ProductsTable({ active, archived, allCategories, allSupp
     }).format(amount);
   };
 
+  const formatSellPrice = (product: ProductStockLevel) => {
+    const price = formatCurrency(product.sell_price);
+    return product.stock_unit ? `${price} / ${product.stock_unit}` : price;
+  };
+
   return (
     <div className="w-full max-w-6xl mx-auto space-y-6">
       {/* Header section */}
@@ -267,7 +272,7 @@ export default function ProductsTable({ active, archived, allCategories, allSupp
                       )}
                     </td>
                     <td className="py-4 px-4 text-right font-medium">
-                      {formatCurrency(product.sell_price)}
+                      {formatSellPrice(product)}
                     </td>
                     <td className="py-4 px-4 text-center">
                       {(() => {
@@ -409,7 +414,7 @@ export default function ProductsTable({ active, archived, allCategories, allSupp
                   <div className="text-right shrink-0">
                     <span className="text-ink-500 text-xs block">Sell Price</span>
                     <span className="font-semibold text-ink-900">
-                      {formatCurrency(product.sell_price)}
+                      {formatSellPrice(product)}
                     </span>
                   </div>
                 </div>

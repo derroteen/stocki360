@@ -45,11 +45,14 @@ export default function ProductModal({
   const [stockUnit, setStockUnit] = useState('unit');
   const [packageUnit, setPackageUnit] = useState('');
   const [unitsPerPackage, setUnitsPerPackage] = useState('');
+  const [packageCostPrice, setPackageCostPrice] = useState('');
+  const [packageSellPrice, setPackageSellPrice] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const isEdit = Boolean(product);
   const hasPackaging = Boolean(packageUnit && unitsPerPackage && Number(unitsPerPackage) > 0);
+  const unitLabel = stockUnit.trim() || 'unit';
 
   useEffect(() => {
     if (product) {
@@ -63,6 +66,8 @@ export default function ProductModal({
       setStockUnit(product.stock_unit || 'unit');
       setPackageUnit(product.package_unit || '');
       setUnitsPerPackage(product.units_per_package != null ? String(product.units_per_package) : '');
+      setPackageCostPrice(product.package_cost_price != null ? String(product.package_cost_price) : '');
+      setPackageSellPrice(product.package_sell_price != null ? String(product.package_sell_price) : '');
       setBarcodeRows(
         barcodes.map((b) => ({
           id: b.id,
@@ -82,6 +87,8 @@ export default function ProductModal({
       setStockUnit('unit');
       setPackageUnit('');
       setUnitsPerPackage('');
+      setPackageCostPrice('');
+      setPackageSellPrice('');
       setBarcodeRows([]);
     }
     setError(null);
@@ -132,6 +139,8 @@ export default function ProductModal({
         stock_unit: stockUnit,
         package_unit: packageUnit || null,
         units_per_package: unitsPerPackage || null,
+        package_cost_price: packageCostPrice || null,
+        package_sell_price: packageSellPrice || null,
         barcodes: barcodeRows
           .map((row) => ({
             barcode: row.barcode.trim(),
@@ -347,7 +356,7 @@ export default function ProductModal({
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-ink-700 mb-1">
-                Cost Price
+                Cost Price (per {unitLabel})
               </label>
               <input
                 type="number"
@@ -361,7 +370,7 @@ export default function ProductModal({
 
             <div>
               <label className="block text-sm font-medium text-ink-700 mb-1">
-                Sell Price
+                Sell Price (per {unitLabel})
               </label>
               <input
                 type="number"
@@ -436,6 +445,57 @@ export default function ProductModal({
             <p className="text-sm text-ink-600 bg-slate-50 p-2 rounded border border-slate-100">
               Conversion: <strong>1 {packageUnit} = {unitsPerPackage} {stockUnit}s</strong>
             </p>
+          )}
+
+          {hasPackaging && (
+            <div className="border-t border-slate-200 pt-4 mt-4 space-y-4">
+              <h3 className="text-sm font-semibold text-ink-900">
+                Bulk package pricing <span className="text-ink-500 font-normal">(optional)</span>
+              </h3>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-ink-700 mb-1">
+                    Cost Price (per {packageUnit})
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={packageCostPrice}
+                    onChange={(e) => setPackageCostPrice(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-white text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-ink-700 mb-1">
+                    Sell Price (per {packageUnit})
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={packageSellPrice}
+                    onChange={(e) => setPackageSellPrice(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-white text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
+                  />
+                </div>
+              </div>
+
+              {packageSellPrice &&
+                Number(unitsPerPackage) > 0 &&
+                !isNaN(parseFloat(packageSellPrice)) && (
+                  <p className="text-sm text-ink-600 bg-slate-50 p-2 rounded border border-slate-100">
+                    Works out to Ksh{' '}
+                    {(parseFloat(packageSellPrice) / Number(unitsPerPackage)).toLocaleString('en-KE', {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}{' '}
+                    per {unitLabel}
+                  </p>
+                )}
+            </div>
           )}
         </form>
 

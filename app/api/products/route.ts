@@ -19,6 +19,8 @@ type ProductPayload = {
   stock_unit: string;
   package_unit?: string | null;
   units_per_package?: number | null;
+  package_cost_price?: number | null;
+  package_sell_price?: number | null;
 };
 
 type BarcodeEntryMode = 'individual' | 'package';
@@ -72,6 +74,18 @@ function toValidNonNegativeInteger(value: unknown, field: string): number {
   return parsed;
 }
 
+function toValidNonNegativeNumberOrNull(value: unknown, field: string): number | null {
+  if (value === undefined || value === null) {
+    return null;
+  }
+
+  if (typeof value === 'string' && value.trim().length === 0) {
+    return null;
+  }
+
+  return toValidNonNegativeNumber(value, field);
+}
+
 function validateProductInput(body: unknown): ProductPayload {
   const record = typeof body === 'object' && body !== null ? (body as Record<string, unknown>) : {};
 
@@ -106,6 +120,8 @@ function validateProductInput(body: unknown): ProductPayload {
     stock_unit: toNonEmptyTrimmedString(record.stock_unit) || 'unit',
     package_unit: packageUnit,
     units_per_package: unitsPerPackage,
+    package_cost_price: toValidNonNegativeNumberOrNull(record.package_cost_price, 'Package cost price'),
+    package_sell_price: toValidNonNegativeNumberOrNull(record.package_sell_price, 'Package sell price'),
   };
 
   if (Object.prototype.hasOwnProperty.call(record, 'barcode')) {

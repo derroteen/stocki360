@@ -94,6 +94,33 @@ export default function NewSaleModal({
     return stock;
   };
 
+  // Computes the price that should be prefilled for a product in a given
+  // sell mode — shared by product selection and sell-mode switching so the
+  // two can't drift apart. Package price prefers package_sell_price,
+  // falling back to sell_price x units_per_package when that isn't set.
+  const getPrefillPrices = (
+    product: ProductStockLevel | null,
+    mode: 'individual' | 'package'
+  ): { unitPrice: string; packageUnitPrice: string } => {
+    if (mode === 'package') {
+      const packagePrice =
+        product?.package_sell_price != null
+          ? product.package_sell_price
+          : product?.sell_price != null && product?.units_per_package
+          ? product.sell_price * product.units_per_package
+          : null;
+      return {
+        unitPrice: '',
+        packageUnitPrice: packagePrice != null ? String(packagePrice) : '',
+      };
+    }
+
+    return {
+      unitPrice: product?.sell_price != null ? String(product.sell_price) : '',
+      packageUnitPrice: '',
+    };
+  };
+
   const handleBarcodeInputChange = (val: string) => {
     setBarcodeInput(val);
     if (barcodeMessage) setBarcodeMessage(null);
@@ -194,6 +221,7 @@ export default function NewSaleModal({
 
   const handleProductChange = (index: number, newProductId: string) => {
     const selectedProd = getProduct(newProductId);
+    const prefill = getPrefillPrices(selectedProd, 'individual');
     setItems((prev) => {
       const updated = [...prev];
       updated[index] = {
@@ -202,9 +230,7 @@ export default function NewSaleModal({
         entryMode: 'individual',
         packageQuantity: '1',
         packageUnitPrice: '',
-        unitPrice:
-          updated[index].unitPrice ||
-          (selectedProd?.sell_price != null ? String(selectedProd.sell_price) : ''),
+        unitPrice: updated[index].unitPrice || prefill.unitPrice,
       };
       return updated;
     });
@@ -213,12 +239,17 @@ export default function NewSaleModal({
   const handleEntryModeChange = (index: number, mode: 'individual' | 'package') => {
     setItems((prev) => {
       const updated = [...prev];
+      const prefill = getPrefillPrices(getProduct(updated[index].productId), mode);
       updated[index] = {
         ...updated[index],
         entryMode: mode,
+        // Always overwrite the price for the newly selected mode — a price
+        // typed for the other mode (e.g. per-kg) is not valid here, so it
+        // must never carry over. The abandoned mode's own fields are reset
+        // to their defaults so stale values don't linger either.
         ...(mode === 'individual'
-          ? { packageQuantity: '1', packageUnitPrice: '' }
-          : { quantity: '1', unitPrice: '' }),
+          ? { packageQuantity: '1', packageUnitPrice: '', unitPrice: prefill.unitPrice }
+          : { quantity: '1', unitPrice: '', packageUnitPrice: prefill.packageUnitPrice }),
       };
       return updated;
     });
@@ -714,7 +745,7 @@ export default function NewSaleModal({
                             Stock removed: <strong>{stockUnits} {selectedProduct.stock_unit || 'unit'}s</strong>
                             {perUnitPrice !== null && (
                               <>
-                                {' '}· ≈ <strong>{formatCurrency(perUnitPrice)}</strong> per {selectedProduct.stock_unit || 'unit'} (estimate — final price is calculated server-side)
+                                {' '}· ≈ <strong>{formatCurrency(perUnitPrice)}</strong> per {selectedProduct.stock_unit || 'unit'}
                               </>
                             )}
                           </p>
