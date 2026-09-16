@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { ProductStockLevel, ProductBarcode, CreateSaleItemPayload } from '@/lib/supabase/types';
+import CameraScanner from './CameraScanner';
 
 interface NewSaleModalProps {
   isOpen: boolean;
@@ -53,6 +54,7 @@ export default function NewSaleModal({
 
   const [barcodeInput, setBarcodeInput] = useState('');
   const [barcodeMessage, setBarcodeMessage] = useState<string | null>(null);
+  const [showCameraScanner, setShowCameraScanner] = useState(false);
   const barcodeInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -68,6 +70,7 @@ export default function NewSaleModal({
       setItems([emptyItem()]);
       setBarcodeInput('');
       setBarcodeMessage(null);
+      setShowCameraScanner(false);
       barcodeInputRef.current?.focus();
     }
   }, [isOpen]);
@@ -126,11 +129,10 @@ export default function NewSaleModal({
     if (barcodeMessage) setBarcodeMessage(null);
   };
 
-  const handleBarcodeKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key !== 'Enter') return;
-    e.preventDefault();
-
-    const raw = barcodeInput.trim();
+  // Shared by the barcode text input (on Enter) and the camera scanner, so
+  // the lookup/increment/add logic can't drift between the two entry paths.
+  const handleBarcodeScan = (rawValue: string) => {
+    const raw = rawValue.trim();
     if (!raw) return;
 
     const matchRow = barcodes.find(
@@ -217,6 +219,12 @@ export default function NewSaleModal({
     });
     setBarcodeInput('');
     barcodeInputRef.current?.focus();
+  };
+
+  const handleBarcodeKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    handleBarcodeScan(barcodeInput);
   };
 
   const handleProductChange = (index: number, newProductId: string) => {
@@ -562,17 +570,39 @@ export default function NewSaleModal({
               <label htmlFor="sale-barcode-scan" className="block text-xs font-semibold text-ink-700 mb-1.5">
                 Scan barcode
               </label>
-              <input
-                id="sale-barcode-scan"
-                ref={barcodeInputRef}
-                type="text"
-                autoFocus
-                value={barcodeInput}
-                onChange={(e) => handleBarcodeInputChange(e.target.value)}
-                onKeyDown={handleBarcodeKeyDown}
-                placeholder="Scan or type a barcode, then press Enter"
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-accent-500 focus:border-accent-500 min-h-[44px]"
-              />
+              <div className="flex items-center gap-2">
+                <input
+                  id="sale-barcode-scan"
+                  ref={barcodeInputRef}
+                  type="text"
+                  autoFocus
+                  value={barcodeInput}
+                  onChange={(e) => handleBarcodeInputChange(e.target.value)}
+                  onKeyDown={handleBarcodeKeyDown}
+                  placeholder="Scan or type a barcode, then press Enter"
+                  className="flex-1 min-w-0 px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-accent-500 focus:border-accent-500 min-h-[44px]"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowCameraScanner(true)}
+                  aria-label="Scan barcode with camera"
+                  className="shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center text-ink-600 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="w-5 h-5"
+                  >
+                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                    <circle cx="12" cy="13" r="4"></circle>
+                  </svg>
+                </button>
+              </div>
               {barcodeMessage && (
                 <p className="text-xs text-warn-700 mt-1">{barcodeMessage}</p>
               )}
@@ -820,6 +850,13 @@ export default function NewSaleModal({
           </button>
         </div>
       </div>
+
+      {showCameraScanner && (
+        <CameraScanner
+          onScan={handleBarcodeScan}
+          onClose={() => setShowCameraScanner(false)}
+        />
+      )}
     </div>
   );
 }
