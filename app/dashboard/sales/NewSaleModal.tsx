@@ -131,7 +131,9 @@ export default function NewSaleModal({
 
   // Shared by the barcode text input (on Enter) and the camera scanner, so
   // the lookup/increment/add logic can't drift between the two entry paths.
-  // Returns what happened so each caller can give its own feedback.
+  // Returns what happened so each caller can give its own feedback. Does
+  // NOT touch barcodeInput or focus — the camera path must never refocus a
+  // text input, or the on-screen keyboard pops up after every scan.
   const handleBarcodeScan = (rawValue: string): ScanResult => {
     const raw = rawValue.trim();
 
@@ -142,8 +144,6 @@ export default function NewSaleModal({
 
     if (!matchRow || !match) {
       setBarcodeMessage('No product matches that barcode');
-      setBarcodeInput('');
-      barcodeInputRef.current?.focus();
       return { status: 'not_found' };
     }
 
@@ -164,8 +164,6 @@ export default function NewSaleModal({
             ? `Item #${existingIndex + 1}: Only ${max} package(s) available in stock.`
             : `Item #${existingIndex + 1}: Only ${max} available in stock.`
         );
-        setBarcodeInput('');
-        barcodeInputRef.current?.focus();
         return { status: 'stock_limit', productName: match.name, available: max };
       }
 
@@ -179,8 +177,6 @@ export default function NewSaleModal({
             : { ...it, quantity: String(currentQty + 1) };
         return updated;
       });
-      setBarcodeInput('');
-      barcodeInputRef.current?.focus();
       return { status: 'incremented', productName: match.name, quantity: currentQty + 1 };
     }
 
@@ -217,8 +213,6 @@ export default function NewSaleModal({
       }
       return [...prev, newItem];
     });
-    setBarcodeInput('');
-    barcodeInputRef.current?.focus();
     return { status: 'added', productName: match.name, quantity: 1 };
   };
 
@@ -227,6 +221,8 @@ export default function NewSaleModal({
     e.preventDefault();
     if (!barcodeInput.trim()) return;
     handleBarcodeScan(barcodeInput);
+    setBarcodeInput('');
+    barcodeInputRef.current?.focus();
   };
 
   const handleProductChange = (index: number, newProductId: string) => {
@@ -597,7 +593,12 @@ export default function NewSaleModal({
                 />
                 <button
                   type="button"
-                  onClick={() => setShowCameraScanner(true)}
+                  onClick={() => {
+                    // Dismiss the on-screen keyboard if it's already open
+                    // before the camera overlay takes over.
+                    barcodeInputRef.current?.blur();
+                    setShowCameraScanner(true);
+                  }}
                   aria-label="Scan barcode with camera"
                   className="shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center text-ink-600 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer"
                 >
