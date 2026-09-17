@@ -224,13 +224,30 @@ export default function NewSaleModal({
     return { status: 'added', productName: match.name, quantity: 1 };
   };
 
-  const handleBarcodeKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key !== 'Enter') return;
-    e.preventDefault();
+  // Shared by the Enter/Go/Search key and the "Add" button, so the
+  // clear+refocus behaviour around a manual lookup can't drift between them.
+  const submitBarcodeScan = () => {
     if (!barcodeInput.trim()) return;
     handleBarcodeScan(barcodeInput);
     setBarcodeInput('');
     barcodeInputRef.current?.focus();
+  };
+
+  const handleBarcodeKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Some mobile keyboards send 'Go' or 'Search' (or only the legacy
+    // keyCode 13) for their action key instead of 'Enter' — don't rely on
+    // any one of them alone.
+    const isSubmitKey =
+      e.key === 'Enter' || e.key === 'Go' || e.key === 'Search' || e.keyCode === 13;
+    if (!isSubmitKey) return;
+    // Always prevent default first so focus never jumps to the next field,
+    // even if the input turns out to be empty below.
+    e.preventDefault();
+    submitBarcodeScan();
+  };
+
+  const handleBarcodeAddClick = () => {
+    submitBarcodeScan();
   };
 
   const handleProductChange = (index: number, newProductId: string) => {
@@ -592,6 +609,7 @@ export default function NewSaleModal({
                   id="sale-barcode-scan"
                   ref={barcodeInputRef}
                   type="text"
+                  enterKeyHint="search"
                   value={barcodeInput}
                   onChange={(e) => handleBarcodeInputChange(e.target.value)}
                   onKeyDown={handleBarcodeKeyDown}
@@ -603,6 +621,14 @@ export default function NewSaleModal({
                   readOnly={showCameraScanner}
                   className="flex-1 min-w-0 px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-accent-500 focus:border-accent-500 min-h-[44px]"
                 />
+                <button
+                  type="button"
+                  onClick={handleBarcodeAddClick}
+                  disabled={!barcodeInput.trim()}
+                  className="shrink-0 min-h-[44px] px-4 text-sm font-semibold text-accent-700 bg-accent-50 hover:bg-accent-100 border border-accent-200 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                >
+                  Add
+                </button>
                 <button
                   type="button"
                   onClick={() => {
