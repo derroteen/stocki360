@@ -1,5 +1,7 @@
 import Link from "next/link";
 import ThemeToggle from "@/components/ThemeToggle";
+import Typewriter from "@/components/landing/Typewriter";
+import LiveOverviewCard from "@/components/landing/LiveOverviewCard";
 
 export default function Home() {
   const features = [
@@ -65,86 +67,43 @@ export default function Home() {
       <main>
         <section className="relative overflow-hidden border-b border-line bg-card">
           <div className="pointer-events-none absolute inset-x-0 top-0 h-48 bg-gradient-to-b from-accent-50 to-transparent" />
+          <div aria-hidden="true" className="landing-hero-glow pointer-events-none absolute inset-0" />
           <div className="relative mx-auto grid w-full max-w-6xl gap-10 px-4 py-14 sm:px-6 md:py-18 lg:grid-cols-2 lg:items-center">
             <div className="space-y-6">
               <div className="inline-flex items-center rounded-full border border-accent-100 bg-accent-50 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-accent-text">
                 Inventory Management for SMEs
               </div>
-              <h1 className="font-serif text-4xl font-bold leading-tight tracking-tight text-ink-900 sm:text-5xl">
-                Run your stock with clarity, from shelf to sale.
-              </h1>
-              <p className="max-w-xl text-base leading-7 text-ink-700 sm:text-lg">
-                A simple inventory management system for modern businesses. Stocki360 helps you track stock in real time, manage products, and reduce costly stock-related mistakes.
-              </p>
+              <Typewriter>
+                <p className="landing-paragraph max-w-xl text-base leading-7 text-ink-700 sm:text-lg">
+                  A simple inventory management system for modern businesses. Stocki360 helps you track stock in real time, manage products, and reduce costly stock-related mistakes.
+                </p>
 
-              <ul className="grid gap-2 text-sm text-ink-700 sm:grid-cols-2">
-                <li className="rounded-lg border border-line bg-subtle px-3 py-2">Track stock in real time</li>
-                <li className="rounded-lg border border-line bg-subtle px-3 py-2">Manage products</li>
-                <li className="rounded-lg border border-line bg-subtle px-3 py-2">Monitor low-stock items</li>
-                <li className="rounded-lg border border-line bg-subtle px-3 py-2">Manage sales and purchases</li>
-                <li className="rounded-lg border border-line bg-subtle px-3 py-2 sm:col-span-2">Know what is in your inventory and reduce stock-related mistakes</li>
-              </ul>
+                <ul className="grid gap-2 text-sm text-ink-700 sm:grid-cols-2">
+                  <li className="landing-feature rounded-lg border border-line bg-subtle px-3 py-2">Track stock in real time</li>
+                  <li className="landing-feature rounded-lg border border-line bg-subtle px-3 py-2">Manage products</li>
+                  <li className="landing-feature rounded-lg border border-line bg-subtle px-3 py-2">Monitor low-stock items</li>
+                  <li className="landing-feature rounded-lg border border-line bg-subtle px-3 py-2">Manage sales and purchases</li>
+                  <li className="landing-feature rounded-lg border border-line bg-subtle px-3 py-2 sm:col-span-2">Know what is in your inventory and reduce stock-related mistakes</li>
+                </ul>
 
-              <div className="flex flex-col gap-3 pt-2 sm:flex-row">
-                <Link
-                  href="/login"
-                  className="inline-flex min-h-[44px] items-center justify-center rounded-lg bg-accent-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-accent-700"
-                >
-                  Get Started
-                </Link>
-                <Link
-                  href="/login"
-                  className="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-line-strong px-5 py-2.5 text-sm font-semibold text-ink-700 transition-colors hover:bg-subtle"
-                >
-                  Sign In
-                </Link>
-              </div>
+                <div className="landing-actions flex flex-col gap-3 pt-2 sm:flex-row">
+                  <Link
+                    href="/login"
+                    className="inline-flex min-h-[44px] items-center justify-center rounded-lg bg-accent-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-accent-700"
+                  >
+                    Get Started
+                  </Link>
+                  <Link
+                    href="/login"
+                    className="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-line-strong px-5 py-2.5 text-sm font-semibold text-ink-700 transition-colors hover:bg-subtle"
+                  >
+                    Sign In
+                  </Link>
+                </div>
+              </Typewriter>
             </div>
 
-            <div className="rounded-2xl border border-line bg-panel p-4 shadow-sm sm:p-6">
-              <div className="mb-4 flex items-center justify-between border-b border-line pb-3">
-                <div>
-                  <p className="text-sm font-semibold text-ink-900">Stocki360 Overview</p>
-                  <p className="text-xs text-ink-500">Live inventory snapshot</p>
-                </div>
-                <span className="rounded-full border border-good-600/20 bg-good-100 px-2.5 py-1 text-xs font-medium text-good-700">
-                  Synced
-                </span>
-              </div>
-
-              <div className="grid grid-cols-3 gap-3">
-                <div className="rounded-xl border border-line bg-card p-3">
-                  <p className="text-[11px] uppercase tracking-wider text-ink-500">Products</p>
-                  <p className="mt-1 font-serif text-2xl font-bold text-ink-900">128</p>
-                </div>
-                <div className="rounded-xl border border-line bg-card p-3">
-                  <p className="text-[11px] uppercase tracking-wider text-ink-500">Low Stock</p>
-                  <p className="mt-1 font-serif text-2xl font-bold text-warn-700">7</p>
-                </div>
-                <div className="rounded-xl border border-line bg-card p-3">
-                  <p className="text-[11px] uppercase tracking-wider text-ink-500">Updates</p>
-                  <p className="mt-1 font-serif text-2xl font-bold text-accent-text">24</p>
-                </div>
-              </div>
-
-              <div className="mt-4 rounded-xl border border-line bg-card p-4">
-                <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-ink-500">Low stock alerts</p>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between rounded-lg bg-warn-100 px-3 py-2 text-sm text-warn-700">
-                    <span>Galvanized Nails 2.5 inch</span>
-                    <span className="font-semibold">6 left</span>
-                  </div>
-                  <div className="flex items-center justify-between rounded-lg bg-subtle-strong px-3 py-2 text-sm text-ink-700">
-                    <span>Paint Roller Set</span>
-                    <span className="font-semibold">12 left</span>
-                  </div>
-                  <div className="flex items-center justify-between rounded-lg bg-subtle-strong px-3 py-2 text-sm text-ink-700">
-                    <span>PVC Pipe 20mm</span>
-                    <span className="font-semibold">18 left</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <LiveOverviewCard />
           </div>
         </section>
 
