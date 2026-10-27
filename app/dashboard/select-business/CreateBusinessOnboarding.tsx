@@ -42,8 +42,8 @@ export default function CreateBusinessOnboarding() {
   };
 
   return (
-    <div className="min-h-screen bg-white text-ink-900 flex items-center justify-center px-4">
-      <div className="w-full max-w-lg rounded-xl border border-slate-200 bg-surface p-6 sm:p-8 shadow-2xs space-y-5">
+    <div className="min-h-screen bg-card text-ink-900 flex items-center justify-center px-4">
+      <div className="w-full max-w-lg rounded-xl border border-line bg-panel p-6 sm:p-8 shadow-2xs space-y-5">
         <div className="space-y-1">
           <h1 className="font-serif text-2xl font-bold text-ink-900">Create your first business</h1>
           <p className="text-sm text-ink-600">Start by creating a business to access your dashboard.</p>
@@ -60,13 +60,13 @@ export default function CreateBusinessOnboarding() {
               value={name}
               onChange={(event) => setName(event.target.value)}
               placeholder="Acme Trading Co."
-              className="w-full min-h-[44px] rounded-lg border border-slate-300 px-3 text-sm text-ink-900 placeholder:text-ink-400 focus:outline-none focus:ring-2 focus:ring-ink-900/10"
+              className="w-full min-h-[44px] rounded-lg border border-line-strong px-3 text-sm text-ink-900 placeholder:text-ink-400 focus:outline-none focus:ring-2 focus:ring-ink-900/10"
               disabled={isSubmitting}
               required
             />
           </div>
 
-          {error ? <p className="text-sm text-red-600">{error}</p> : null}
+          {error ? <p className="text-sm text-danger-600">{error}</p> : null}
 
           <button
             type="submit"

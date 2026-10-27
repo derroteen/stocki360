@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
+import ThemeToggle from '@/components/ThemeToggle';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -86,14 +87,14 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="min-h-screen flex flex-col lg:flex-row bg-white">
+    <main className="min-h-screen flex flex-col lg:flex-row bg-card">
       {/* Left Panel - Hero / Branding (visible on screens >= 1024px) */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-accent-700 to-accent-500 text-white p-12 lg:p-16 flex-col justify-between relative overflow-hidden">
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-800 to-blue-600 text-white p-12 lg:p-16 flex-col justify-between relative overflow-hidden">
         <div className="relative z-10 space-y-3">
           <h1 className="text-4xl font-bold font-serif tracking-tight text-white">
             Stocki360
           </h1>
-          <p className="text-accent-100 text-xl font-medium">
+          <p className="text-blue-100 text-xl font-medium">
             Track stock, spot shortages, stay ahead.
           </p>
         </div>
@@ -129,7 +130,7 @@ export default function LoginPage() {
         </div>
 
         {/* Bottom subtle detail */}
-        <div className="relative z-10 text-xs text-accent-100/70">
+        <div className="relative z-10 text-xs text-blue-100/70">
           © {new Date().getFullYear()} Stocki360 Inventory Management
         </div>
 
@@ -139,11 +140,13 @@ export default function LoginPage() {
       </div>
 
       {/* Right Panel - Form Container */}
-      <div className="w-full lg:w-1/2 flex-1 flex items-center justify-center p-6 sm:p-12 lg:p-16 bg-white">
+      <div className="w-full lg:w-1/2 flex-1 flex items-center justify-center p-6 sm:p-12 lg:p-16 bg-card">
         <div className="w-full max-w-md space-y-6">
-          {/* Mobile Wordmark (<1024px) */}
-          <div className="lg:hidden text-2xl font-bold font-serif text-accent-600 mb-2">
-            Stocki360
+          <div className="flex items-center justify-between lg:justify-end">
+            <div className="lg:hidden text-2xl font-bold font-serif text-accent-link mb-2">
+              Stocki360
+            </div>
+            <ThemeToggle />
           </div>
 
           <div className="space-y-2 text-left">
@@ -180,7 +183,7 @@ export default function LoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full min-h-[44px] px-3 py-2 border border-slate-200 rounded-lg bg-white text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
+                className="w-full min-h-[44px] px-3 py-2 border border-line rounded-lg bg-card text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
                 placeholder="you@example.com"
               />
             </div>
@@ -196,7 +199,7 @@ export default function LoginPage() {
                   required
                   value={password}
                   onChange={(e) => handlePasswordChange(e.target.value)}
-                  className="w-full min-h-[44px] pl-3 pr-10 py-2 border border-slate-200 rounded-lg bg-white text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
+                  className="w-full min-h-[44px] pl-3 pr-10 py-2 border border-line rounded-lg bg-card text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
                   placeholder="••••••••"
                 />
                 <button
@@ -231,7 +234,7 @@ export default function LoginPage() {
                     required
                     value={confirmPassword}
                     onChange={(e) => handleConfirmPasswordChange(e.target.value)}
-                    className="w-full min-h-[44px] pl-3 pr-10 py-2 border border-slate-200 rounded-lg bg-white text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
+                    className="w-full min-h-[44px] pl-3 pr-10 py-2 border border-line rounded-lg bg-card text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
                     placeholder="••••••••"
                   />
                   <button
@@ -270,14 +273,14 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <div className="text-left pt-2 border-t border-slate-200 text-sm text-ink-500">
+          <div className="text-left pt-2 border-t border-line text-sm text-ink-500">
             {isSignUp ? (
               <p>
                 Already have an account?{' '}
                 <button
                   type="button"
                   onClick={toggleMode}
-                  className="text-accent-600 hover:text-accent-700 hover:underline font-medium cursor-pointer"
+                  className="text-accent-link hover:text-accent-text hover:underline font-medium cursor-pointer"
                 >
                   Sign in
                 </button>
@@ -288,7 +291,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={toggleMode}
-                  className="text-accent-600 hover:text-accent-700 hover:underline font-medium cursor-pointer"
+                  className="text-accent-link hover:text-accent-text hover:underline font-medium cursor-pointer"
                 >
                   Sign up
                 </button>

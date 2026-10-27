@@ -34,7 +34,7 @@ export default function RevokeButton({ invitationId }: { invitationId: string })
         type="button"
         onClick={handleRevoke}
         disabled={isRevoking}
-        className="min-h-[36px] rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-ink-700 hover:bg-slate-50 disabled:opacity-50"
+        className="min-h-[36px] rounded-lg border border-line-strong px-3 py-1.5 text-xs font-semibold text-ink-700 hover:bg-subtle disabled:opacity-50"
       >
         {isRevoking ? 'Revoking...' : 'Revoke'}
       </button>

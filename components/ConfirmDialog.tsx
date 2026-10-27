@@ -54,9 +54,9 @@ export default function ConfirmDialog({
   const getConfirmButtonClasses = () => {
     switch (variant) {
       case 'danger':
-        return 'bg-red-600 hover:bg-red-700 focus:ring-red-500 text-white';
+        return 'bg-danger-action hover:bg-danger-action-hover focus:ring-danger-500 text-white';
       case 'warning':
-        return 'bg-amber-600 hover:bg-amber-700 focus:ring-amber-500 text-white';
+        return 'bg-warn-action hover:bg-warn-action-hover focus:ring-warn-500 text-ink-900 hover:text-white';
       case 'default':
       default:
         return 'bg-accent-600 hover:bg-accent-700 focus:ring-accent-500 text-white';
@@ -65,7 +65,7 @@ export default function ConfirmDialog({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/40 backdrop-blur-xs"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-overlay/40 backdrop-blur-xs"
       role="dialog"
       aria-modal="true"
       aria-labelledby="confirm-dialog-title"
@@ -79,7 +79,7 @@ export default function ConfirmDialog({
       />
 
       {/* Modal card */}
-      <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden flex flex-col border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
+      <div className="relative bg-card rounded-2xl shadow-xl w-full max-w-md overflow-hidden flex flex-col border border-line animate-in fade-in zoom-in-95 duration-150">
         <div className="p-6 space-y-3">
           <div className="flex items-start justify-between gap-4">
             <h3
@@ -92,7 +92,7 @@ export default function ConfirmDialog({
               type="button"
               onClick={onCancel}
               disabled={loading}
-              className="p-1 -mr-1 text-ink-400 hover:text-ink-600 rounded-lg hover:bg-slate-100 transition-colors disabled:opacity-50 min-h-[36px] min-w-[36px] flex items-center justify-center cursor-pointer"
+              className="p-1 -mr-1 text-ink-400 hover:text-ink-600 rounded-lg hover:bg-subtle-strong transition-colors disabled:opacity-50 min-h-[36px] min-w-[36px] flex items-center justify-center cursor-pointer"
               aria-label="Close dialog"
             >
               ✕
@@ -104,12 +104,12 @@ export default function ConfirmDialog({
         </div>
 
         {/* Action buttons */}
-        <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 flex items-center justify-end gap-3 rounded-b-2xl">
+        <div className="px-6 py-4 border-t border-line-subtle bg-subtle flex items-center justify-end gap-3 rounded-b-2xl">
           <button
             type="button"
             onClick={onCancel}
             disabled={loading}
-            className="min-h-[44px] px-4 py-2 text-sm font-medium text-ink-600 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg transition-colors shadow-xs disabled:opacity-50 cursor-pointer"
+            className="min-h-[44px] px-4 py-2 text-sm font-medium text-ink-600 bg-card border border-line-strong hover:bg-subtle rounded-lg transition-colors shadow-xs disabled:opacity-50 cursor-pointer"
           >
             {cancelLabel}
           </button>

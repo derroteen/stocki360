@@ -30,9 +30,9 @@ const roleLabels: Record<BusinessRole, string> = {
 function RoleBadge({ role }: { role: BusinessRole }) {
   const styles: Record<BusinessRole, string> = {
     owner: 'bg-ink-900 text-white',
-    admin: 'bg-accent-50 text-accent-700 border border-accent-200',
+    admin: 'bg-accent-50 text-accent-text border border-accent-200',
     storekeeper: 'bg-green-50 text-green-700 border border-green-200',
-    cashier: 'bg-slate-100 text-ink-700 border border-slate-200',
+    cashier: 'bg-subtle-strong text-ink-700 border border-line',
   };
 
   return (
@@ -94,7 +94,7 @@ export default async function TeamPage() {
     <div className="space-y-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-accent-600">Workspace</p>
+          <p className="text-xs font-semibold uppercase tracking-wider text-accent-link">Workspace</p>
           <h1 className="mt-1 text-3xl font-bold font-serif text-ink-900">Team</h1>
           <p className="mt-2 text-sm text-ink-600">Manage the people who can work in this business.</p>
         </div>
@@ -103,17 +103,17 @@ export default async function TeamPage() {
 
       <section className="space-y-3">
         <h2 className="text-lg font-bold font-serif text-ink-900">Members</h2>
-        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xs">
+        <div className="overflow-hidden rounded-xl border border-line bg-card shadow-2xs">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[520px] text-left text-sm">
-              <thead className="bg-slate-50 text-xs uppercase tracking-wider text-ink-500">
+              <thead className="bg-subtle text-xs uppercase tracking-wider text-ink-500">
                 <tr>
                   <th className="px-4 py-3 font-semibold">Email</th>
                   <th className="px-4 py-3 font-semibold">Role</th>
                   <th className="px-4 py-3 font-semibold">Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-line-subtle">
                 {members.map((member) => (
                   <tr key={member.id}>
                     <td className="px-4 py-4 font-medium text-ink-900">{member.email ?? 'No email recorded'}</td>
@@ -130,13 +130,13 @@ export default async function TeamPage() {
       {canManageTeam && (
         <section className="space-y-3">
           <h2 className="text-lg font-bold font-serif text-ink-900">Pending invitations</h2>
-          <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xs">
+          <div className="overflow-hidden rounded-xl border border-line bg-card shadow-2xs">
             {invitations.length === 0 ? (
               <p className="px-4 py-6 text-sm text-ink-500">No pending invitations.</p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[680px] text-left text-sm">
-                  <thead className="bg-slate-50 text-xs uppercase tracking-wider text-ink-500">
+                  <thead className="bg-subtle text-xs uppercase tracking-wider text-ink-500">
                     <tr>
                       <th className="px-4 py-3 font-semibold">Email</th>
                       <th className="px-4 py-3 font-semibold">Role</th>
@@ -144,7 +144,7 @@ export default async function TeamPage() {
                       <th className="px-4 py-3 font-semibold"><span className="sr-only">Actions</span></th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody className="divide-y divide-line-subtle">
                     {invitations.map((invitation) => (
                       <tr key={invitation.id}>
                         <td className="px-4 py-4 font-medium text-ink-900">{invitation.email}</td>

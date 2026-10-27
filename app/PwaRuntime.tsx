@@ -89,7 +89,7 @@ export default function PwaRuntime() {
       ) : null}
 
       {!isInstalled && !installPrompt && showIosHelp ? (
-        <div className="fixed bottom-4 right-4 z-50 max-w-xs rounded-lg border border-slate-200 bg-white px-4 py-3 text-xs text-ink-700 shadow-lg">
+        <div className="fixed bottom-4 right-4 z-50 max-w-xs rounded-lg border border-line bg-card px-4 py-3 text-xs text-ink-700 shadow-lg">
           Install Stocki360 from Safari&apos;s Share menu with &quot;Add to Home Screen&quot;.
         </div>
       ) : null}

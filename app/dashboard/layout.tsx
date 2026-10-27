@@ -27,7 +27,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   }
 
   return (
-    <div className="min-h-screen bg-white text-ink-900 flex flex-col">
+    <div className="min-h-screen bg-page text-ink-900 flex flex-col">
       {invitation && (
         <InvitationBanner
           invitationId={invitation.id}

@@ -96,9 +96,9 @@ export default function StockMovementModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink-900/50 backdrop-blur-xs">
-      <div className="w-full max-w-md bg-surface border border-slate-200 rounded-xl shadow-xl overflow-hidden flex flex-col max-h-[90vh] max-h-[90dvh]">
+      <div className="w-full max-w-md bg-panel border border-line rounded-xl shadow-xl overflow-hidden flex flex-col max-h-[90vh] max-h-[90dvh]">
         {/* Modal Header */}
-        <div className="flex items-center justify-between border-b border-slate-200 px-6 sm:px-8 pt-6 sm:pt-8 pb-4 shrink-0">
+        <div className="flex items-center justify-between border-b border-line px-6 sm:px-8 pt-6 sm:pt-8 pb-4 shrink-0">
           <div>
             <h2 className="text-xl font-bold text-ink-900 font-serif">
               Record Stock Movement
@@ -138,7 +138,7 @@ export default function StockMovementModal({
                 className={`min-h-[44px] px-3 py-2 text-sm font-medium rounded-lg transition-colors cursor-pointer border ${
                   movementType === 'in'
                     ? 'bg-accent-500 text-white border-accent-500 shadow-xs'
-                    : 'bg-white text-ink-700 border-slate-200 hover:bg-slate-50'
+                    : 'bg-card text-ink-700 border-line hover:bg-subtle'
                 }`}
               >
                 Stock In
@@ -152,7 +152,7 @@ export default function StockMovementModal({
                 className={`min-h-[44px] px-3 py-2 text-sm font-medium rounded-lg transition-colors cursor-pointer border ${
                   movementType === 'out'
                     ? 'bg-accent-500 text-white border-accent-500 shadow-xs'
-                    : 'bg-white text-ink-700 border-slate-200 hover:bg-slate-50'
+                    : 'bg-card text-ink-700 border-line hover:bg-subtle'
                 }`}
               >
                 Stock Out
@@ -166,7 +166,7 @@ export default function StockMovementModal({
                 className={`min-h-[44px] px-3 py-2 text-sm font-medium rounded-lg transition-colors cursor-pointer border ${
                   movementType === 'adjustment'
                     ? 'bg-accent-500 text-white border-accent-500 shadow-xs'
-                    : 'bg-white text-ink-700 border-slate-200 hover:bg-slate-50'
+                    : 'bg-card text-ink-700 border-line hover:bg-subtle'
                 }`}
               >
                 Adjustment
@@ -190,7 +190,7 @@ export default function StockMovementModal({
                       setReceiveAsPackage(false);
                       resetSubmissionKey();
                     }}
-                    className="text-accent-600 focus:ring-accent-500 w-4 h-4"
+                    className="text-accent-link focus:ring-accent-500 w-4 h-4"
                   />
                   <span className="text-sm text-ink-700">
                     Individual {product.stock_unit || 'unit'}s
@@ -205,7 +205,7 @@ export default function StockMovementModal({
                       setReceiveAsPackage(true);
                       resetSubmissionKey();
                     }}
-                    className="text-accent-600 focus:ring-accent-500 w-4 h-4"
+                    className="text-accent-link focus:ring-accent-500 w-4 h-4"
                   />
                   <span className="text-sm text-ink-700">
                     Bulk {product.package_unit}s
@@ -230,10 +230,10 @@ export default function StockMovementModal({
                 setQuantity(e.target.value);
                 resetSubmissionKey();
               }}
-              className="w-full min-h-[44px] px-3 py-2 border border-slate-200 rounded-lg bg-white text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
+              className="w-full min-h-[44px] px-3 py-2 border border-line rounded-lg bg-card text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
             />
             {receiveAsPackage && movementType === 'in' && product.units_per_package && numQty > 0 && (
-              <p className="mt-2 text-sm text-ink-600 bg-slate-50 p-2 rounded border border-slate-100">
+              <p className="mt-2 text-sm text-ink-600 bg-subtle p-2 rounded border border-line-subtle">
                 Stock added: <strong>{numQty * product.units_per_package} {product.stock_unit || 'unit'}s</strong>
               </p>
             )}
@@ -252,18 +252,18 @@ export default function StockMovementModal({
                 setNote(e.target.value);
                 resetSubmissionKey();
               }}
-              className="w-full min-h-[44px] px-3 py-2 border border-slate-200 rounded-lg bg-white text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
+              className="w-full min-h-[44px] px-3 py-2 border border-line rounded-lg bg-card text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
               placeholder="e.g. Restock from supplier, Damaged goods"
             />
           </div>
         </form>
 
-        <div className="flex items-center justify-end gap-3 border-t border-slate-200 px-6 sm:px-8 py-4 shrink-0">
+        <div className="flex items-center justify-end gap-3 border-t border-line px-6 sm:px-8 py-4 shrink-0">
           <button
             type="button"
             onClick={handleClose}
             disabled={loading}
-            className="min-h-[44px] px-4 py-2 text-sm font-medium text-ink-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer"
+            className="min-h-[44px] px-4 py-2 text-sm font-medium text-ink-700 bg-subtle-strong hover:bg-subtle-active rounded-lg transition-colors cursor-pointer"
           >
             Cancel
           </button>

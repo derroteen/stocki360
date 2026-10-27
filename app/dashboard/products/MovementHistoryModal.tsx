@@ -27,7 +27,7 @@ const typeLabels: Record<StockMovement['movement_type'], string> = {
 const typeStyles: Record<StockMovement['movement_type'], string> = {
   in: 'bg-good-100 text-good-700 border border-good-600/30',
   out: 'bg-warn-100 text-warn-700 border border-warn-600/30',
-  adjustment: 'bg-accent-50 text-accent-700 border border-accent-100',
+  adjustment: 'bg-accent-50 text-accent-text border border-accent-100',
 };
 
 function formatDate(value: string) {
@@ -80,8 +80,8 @@ export default function MovementHistoryModal({ product, onClose }: MovementHisto
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink-900/50 p-4 backdrop-blur-xs">
-      <div className="w-full max-w-4xl overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl">
-        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4 sm:px-6">
+      <div className="w-full max-w-4xl overflow-hidden rounded-xl border border-line bg-card shadow-xl">
+        <div className="flex items-center justify-between border-b border-line px-5 py-4 sm:px-6">
           <h2 className="text-xl font-bold font-serif text-ink-900">
             {product.name} — Movement History
           </h2>
@@ -112,9 +112,9 @@ export default function MovementHistoryModal({ product, onClose }: MovementHisto
 
           {!loading && !error && movements.length > 0 && (
             <>
-              <div className="hidden sm:block overflow-hidden rounded-lg border border-slate-200">
+              <div className="hidden sm:block overflow-hidden rounded-lg border border-line">
                 <table className="w-full text-left text-sm">
-                  <thead className="bg-slate-50 text-xs uppercase tracking-wider text-ink-500">
+                  <thead className="bg-subtle text-xs uppercase tracking-wider text-ink-500">
                     <tr>
                       <th className="px-4 py-3 font-semibold">Date</th>
                       <th className="px-4 py-3 font-semibold">Type</th>
@@ -123,7 +123,7 @@ export default function MovementHistoryModal({ product, onClose }: MovementHisto
                       <th className="px-4 py-3 font-semibold">Recorded by</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody className="divide-y divide-line-subtle">
                     {movements.map((movement) => (
                       <tr key={movement.id}>
                         <td className="whitespace-nowrap px-4 py-3 text-ink-600">{formatDate(movement.created_at)}</td>
@@ -143,7 +143,7 @@ export default function MovementHistoryModal({ product, onClose }: MovementHisto
 
               <div className="space-y-3 sm:hidden">
                 {movements.map((movement) => (
-                  <div key={movement.id} className="rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-3">
+                  <div key={movement.id} className="rounded-lg border border-line bg-subtle p-4 space-y-3">
                     <div className="flex items-start justify-between gap-3">
                       <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${typeStyles[movement.movement_type]}`}>
                         {typeLabels[movement.movement_type]}

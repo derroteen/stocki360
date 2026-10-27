@@ -476,7 +476,7 @@ export default function NewSaleModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/40 backdrop-blur-xs"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-overlay/40 backdrop-blur-xs"
       role="dialog"
       aria-modal="true"
     >
@@ -486,8 +486,8 @@ export default function NewSaleModal({
         aria-hidden="true"
       />
 
-      <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[90vh] border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+      <div className="relative bg-card rounded-2xl shadow-xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[90vh] border border-line animate-in fade-in zoom-in-95 duration-150">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-line-subtle bg-subtle/50">
           <div>
             <h2 className="text-lg font-bold text-ink-900 font-serif">
               Record Sale
@@ -500,7 +500,7 @@ export default function NewSaleModal({
             type="button"
             onClick={onClose}
             disabled={isSubmitting}
-            className="p-2 -mr-2 text-ink-400 hover:text-ink-600 rounded-full hover:bg-slate-100 transition-colors disabled:opacity-50 min-h-[44px] min-w-[44px] flex items-center justify-center cursor-pointer"
+            className="p-2 -mr-2 text-ink-400 hover:text-ink-600 rounded-full hover:bg-subtle-strong transition-colors disabled:opacity-50 min-h-[44px] min-w-[44px] flex items-center justify-center cursor-pointer"
             aria-label="Close modal"
           >
             ✕
@@ -525,7 +525,7 @@ export default function NewSaleModal({
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
                 placeholder="e.g. Walk-in, Jane Doe"
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-accent-500 focus:border-accent-500 min-h-[44px]"
+                className="w-full px-3 py-2 border border-line-strong rounded-lg text-sm focus:ring-2 focus:ring-accent-500 focus:border-accent-500 min-h-[44px]"
               />
             </div>
 
@@ -539,7 +539,7 @@ export default function NewSaleModal({
                 value={customerPhone}
                 onChange={(e) => setCustomerPhone(e.target.value)}
                 placeholder="e.g. 0712 345678"
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-accent-500 focus:border-accent-500 min-h-[44px]"
+                className="w-full px-3 py-2 border border-line-strong rounded-lg text-sm focus:ring-2 focus:ring-accent-500 focus:border-accent-500 min-h-[44px]"
               />
             </div>
           </div>
@@ -555,7 +555,7 @@ export default function NewSaleModal({
                 value={referenceNumber}
                 onChange={(e) => setReferenceNumber(e.target.value)}
                 placeholder="e.g. RCT-1042"
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-accent-500 focus:border-accent-500 min-h-[44px]"
+                className="w-full px-3 py-2 border border-line-strong rounded-lg text-sm focus:ring-2 focus:ring-accent-500 focus:border-accent-500 min-h-[44px]"
               />
             </div>
 
@@ -569,7 +569,7 @@ export default function NewSaleModal({
                 required
                 value={saleDate}
                 onChange={(e) => setSaleDate(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-accent-500 focus:border-accent-500 min-h-[44px] bg-white"
+                className="w-full px-3 py-2 border border-line-strong rounded-lg text-sm focus:ring-2 focus:ring-accent-500 focus:border-accent-500 min-h-[44px] bg-card"
               />
             </div>
 
@@ -581,7 +581,7 @@ export default function NewSaleModal({
                 id="sale-payment"
                 value={paymentMethod}
                 onChange={(e) => setPaymentMethod(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-accent-500 focus:border-accent-500 min-h-[44px] bg-white"
+                className="w-full px-3 py-2 border border-line-strong rounded-lg text-sm focus:ring-2 focus:ring-accent-500 focus:border-accent-500 min-h-[44px] bg-card"
               >
                 {PAYMENT_METHODS.map((m) => (
                   <option key={m} value={m}>{m}</option>
@@ -591,7 +591,7 @@ export default function NewSaleModal({
           </div>
 
           <div className="space-y-3">
-            <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+            <div className="flex items-center justify-between border-b border-line pb-2">
               <h3 className="text-sm font-bold text-ink-900 font-serif">
                 Items Sold
               </h3>
@@ -619,13 +619,13 @@ export default function NewSaleModal({
                   // alongside the blur() call on the camera button.
                   inputMode={showCameraScanner ? 'none' : undefined}
                   readOnly={showCameraScanner}
-                  className="flex-1 min-w-0 px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-accent-500 focus:border-accent-500 min-h-[44px]"
+                  className="flex-1 min-w-0 px-3 py-2 border border-line-strong rounded-lg text-sm focus:ring-2 focus:ring-accent-500 focus:border-accent-500 min-h-[44px]"
                 />
                 <button
                   type="button"
                   onClick={handleBarcodeAddClick}
                   disabled={!barcodeInput.trim()}
-                  className="shrink-0 min-h-[44px] px-4 text-sm font-semibold text-accent-700 bg-accent-50 hover:bg-accent-100 border border-accent-200 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                  className="shrink-0 min-h-[44px] px-4 text-sm font-semibold text-accent-text bg-accent-50 hover:bg-accent-100 border border-accent-200 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                 >
                   Add
                 </button>
@@ -638,7 +638,7 @@ export default function NewSaleModal({
                     setShowCameraScanner(true);
                   }}
                   aria-label="Scan barcode with camera"
-                  className="shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center text-ink-600 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer"
+                  className="shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center text-ink-600 bg-card border border-line-strong rounded-lg hover:bg-subtle transition-colors cursor-pointer"
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -668,7 +668,7 @@ export default function NewSaleModal({
                 return (
                   <div
                     key={index}
-                    className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-3"
+                    className="p-3 rounded-xl bg-subtle border border-line space-y-3"
                   >
                     <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end">
                       <div className="sm:col-span-5">
@@ -679,7 +679,7 @@ export default function NewSaleModal({
                           value={item.productId}
                           onChange={(e) => handleProductChange(index, e.target.value)}
                           required
-                          className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white min-h-[44px]"
+                          className="w-full px-3 py-2 border border-line-strong rounded-lg text-sm bg-card min-h-[44px]"
                         >
                           <option value="">Select product...</option>
                           {products.map((p) => (
@@ -704,7 +704,7 @@ export default function NewSaleModal({
                               value={item.quantity}
                               onChange={(e) => handleQuantityChange(index, e.target.value)}
                               placeholder="1"
-                              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white min-h-[44px]"
+                              className="w-full px-3 py-2 border border-line-strong rounded-lg text-sm bg-card min-h-[44px]"
                             />
                           </div>
 
@@ -720,7 +720,7 @@ export default function NewSaleModal({
                               value={item.unitPrice}
                               onChange={(e) => handleUnitPriceChange(index, e.target.value)}
                               placeholder="0.00"
-                              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white min-h-[44px]"
+                              className="w-full px-3 py-2 border border-line-strong rounded-lg text-sm bg-card min-h-[44px]"
                             />
                           </div>
                         </>
@@ -740,7 +740,7 @@ export default function NewSaleModal({
                               value={item.packageQuantity}
                               onChange={(e) => handlePackageQuantityChange(index, e.target.value)}
                               placeholder="1"
-                              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white min-h-[44px]"
+                              className="w-full px-3 py-2 border border-line-strong rounded-lg text-sm bg-card min-h-[44px]"
                             />
                           </div>
 
@@ -756,7 +756,7 @@ export default function NewSaleModal({
                               value={item.packageUnitPrice}
                               onChange={(e) => handlePackageUnitPriceChange(index, e.target.value)}
                               placeholder="0.00"
-                              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white min-h-[44px]"
+                              className="w-full px-3 py-2 border border-line-strong rounded-lg text-sm bg-card min-h-[44px]"
                             />
                           </div>
                         </>
@@ -766,7 +766,7 @@ export default function NewSaleModal({
                         <span className="block text-xs font-medium text-ink-600 mb-1">
                           Total
                         </span>
-                        <div className="min-h-[44px] flex items-center font-mono font-semibold text-sm text-ink-900 px-2 bg-slate-100 rounded-lg">
+                        <div className="min-h-[44px] flex items-center font-mono font-semibold text-sm text-ink-900 px-2 bg-subtle-strong rounded-lg">
                           {formatCurrency(lineTotals[index])}
                         </div>
                       </div>
@@ -776,7 +776,7 @@ export default function NewSaleModal({
                           type="button"
                           onClick={() => handleRemoveItem(index)}
                           disabled={items.length <= 1}
-                          className="p-2 text-ink-400 hover:text-red-600 rounded-lg hover:bg-slate-200 transition-colors disabled:opacity-30 disabled:cursor-not-allowed min-h-[44px] min-w-[44px] flex items-center justify-center cursor-pointer"
+                          className="p-2 text-ink-400 hover:text-danger-600 rounded-lg hover:bg-subtle-active transition-colors disabled:opacity-30 disabled:cursor-not-allowed min-h-[44px] min-w-[44px] flex items-center justify-center cursor-pointer"
                           aria-label="Remove item"
                         >
                           ✕
@@ -785,7 +785,7 @@ export default function NewSaleModal({
                     </div>
 
                     {hasPackaging && (
-                      <div className="flex items-center gap-4 pt-1 border-t border-slate-200/60">
+                      <div className="flex items-center gap-4 pt-1 border-t border-line/60">
                         <span className="text-xs font-medium text-ink-600">Sell as:</span>
                         <label className="flex items-center gap-1.5 cursor-pointer">
                           <input
@@ -793,7 +793,7 @@ export default function NewSaleModal({
                             name={`sale-entry-mode-${index}`}
                             checked={item.entryMode === 'individual'}
                             onChange={() => handleEntryModeChange(index, 'individual')}
-                            className="text-accent-600 focus:ring-accent-500 w-4 h-4"
+                            className="text-accent-link focus:ring-accent-500 w-4 h-4"
                           />
                           <span className="text-xs text-ink-700">
                             Individual {selectedProduct?.stock_unit || 'unit'}s
@@ -805,7 +805,7 @@ export default function NewSaleModal({
                             name={`sale-entry-mode-${index}`}
                             checked={item.entryMode === 'package'}
                             onChange={() => handleEntryModeChange(index, 'package')}
-                            className="text-accent-600 focus:ring-accent-500 w-4 h-4"
+                            className="text-accent-link focus:ring-accent-500 w-4 h-4"
                           />
                           <span className="text-xs text-ink-700">
                             Whole {selectedProduct?.package_unit}s
@@ -823,7 +823,7 @@ export default function NewSaleModal({
                         const stockUnits = pkgQty * selectedProduct.units_per_package;
                         const perUnitPrice = pkgPrice > 0 ? pkgPrice / selectedProduct.units_per_package : null;
                         return (
-                          <p className="text-xs text-ink-600 bg-white p-2 rounded border border-slate-200">
+                          <p className="text-xs text-ink-600 bg-card p-2 rounded border border-line">
                             Stock removed: <strong>{stockUnits} {selectedProduct.stock_unit || 'unit'}s</strong>
                             {perUnitPrice !== null && (
                               <>
@@ -848,14 +848,14 @@ export default function NewSaleModal({
               <button
                 type="button"
                 onClick={handleAddItem}
-                className="min-h-[44px] px-4 py-2 text-xs font-semibold text-accent-700 bg-accent-50 hover:bg-accent-100 border border-accent-200 rounded-lg transition-colors inline-flex items-center gap-1.5 cursor-pointer"
+                className="min-h-[44px] px-4 py-2 text-xs font-semibold text-accent-text bg-accent-50 hover:bg-accent-100 border border-accent-200 rounded-lg transition-colors inline-flex items-center gap-1.5 cursor-pointer"
               >
                 <span>+ Add another product</span>
               </button>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4 border-t border-slate-200 items-start">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4 border-t border-line items-start">
             <div>
               <label htmlFor="sale-notes" className="block text-xs font-semibold text-ink-700 mb-1.5">
                 Notes <span className="text-ink-500 font-normal">(optional)</span>
@@ -865,11 +865,11 @@ export default function NewSaleModal({
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="e.g. Delivered same day"
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm min-h-[80px] resize-y"
+                className="w-full px-3 py-2 border border-line-strong rounded-lg text-sm min-h-[80px] resize-y"
               />
             </div>
 
-            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2 text-right">
+            <div className="bg-subtle p-4 rounded-xl border border-line space-y-2 text-right">
               <span className="text-xs font-semibold uppercase tracking-wider text-ink-500 block">
                 Grand Total Amount
               </span>
@@ -883,12 +883,12 @@ export default function NewSaleModal({
           </div>
         </form>
 
-        <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 flex items-center justify-end gap-3 rounded-b-2xl">
+        <div className="px-6 py-4 border-t border-line-subtle bg-subtle flex items-center justify-end gap-3 rounded-b-2xl">
           <button
             type="button"
             onClick={onClose}
             disabled={isSubmitting}
-            className="min-h-[44px] px-4 py-2 text-sm font-medium text-ink-600 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg transition-colors shadow-xs disabled:opacity-50 cursor-pointer"
+            className="min-h-[44px] px-4 py-2 text-sm font-medium text-ink-600 bg-card border border-line-strong hover:bg-subtle rounded-lg transition-colors shadow-xs disabled:opacity-50 cursor-pointer"
           >
             Cancel
           </button>

@@ -69,18 +69,18 @@ export default function CategoryModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/40 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-overlay/40 backdrop-blur-sm">
       <div
         className="absolute inset-0"
         onClick={() => !isSubmitting && onClose()}
         aria-hidden="true"
       />
       <div
-        className="relative bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden flex flex-col max-h-full border border-slate-200"
+        className="relative bg-card rounded-2xl shadow-xl w-full max-w-md overflow-hidden flex flex-col max-h-full border border-line"
         role="dialog"
         aria-modal="true"
       >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-line-subtle bg-subtle/50">
           <h2 className="text-lg font-bold text-ink-900 font-serif">
             {isEditing ? 'Edit Category' : 'Add Category'}
           </h2>
@@ -88,7 +88,7 @@ export default function CategoryModal({
             type="button"
             onClick={onClose}
             disabled={isSubmitting}
-            className="p-2 -mr-2 text-ink-400 hover:text-ink-600 rounded-full hover:bg-slate-100 transition-colors disabled:opacity-50 min-h-[44px] min-w-[44px] flex items-center justify-center"
+            className="p-2 -mr-2 text-ink-400 hover:text-ink-600 rounded-full hover:bg-subtle-strong transition-colors disabled:opacity-50 min-h-[44px] min-w-[44px] flex items-center justify-center"
             aria-label="Close modal"
           >
             ✕
@@ -113,7 +113,7 @@ export default function CategoryModal({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Electronics"
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg shadow-xs focus:outline-hidden focus:ring-2 focus:ring-accent-500/20 focus:border-accent-500 transition-colors sm:text-sm text-base min-h-[44px]"
+              className="w-full px-3 py-2 border border-line-strong rounded-lg shadow-xs focus:outline-hidden focus:ring-2 focus:ring-accent-500/20 focus:border-accent-500 transition-colors sm:text-sm text-base min-h-[44px]"
             />
           </div>
 
@@ -126,17 +126,17 @@ export default function CategoryModal({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Brief description of the category..."
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg shadow-xs focus:outline-hidden focus:ring-2 focus:ring-accent-500/20 focus:border-accent-500 transition-colors sm:text-sm text-base min-h-[88px] resize-y"
+              className="w-full px-3 py-2 border border-line-strong rounded-lg shadow-xs focus:outline-hidden focus:ring-2 focus:ring-accent-500/20 focus:border-accent-500 transition-colors sm:text-sm text-base min-h-[88px] resize-y"
             />
           </div>
         </form>
 
-        <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 flex items-center justify-end gap-3 rounded-b-2xl">
+        <div className="px-6 py-4 border-t border-line-subtle bg-subtle flex items-center justify-end gap-3 rounded-b-2xl">
           <button
             type="button"
             onClick={onClose}
             disabled={isSubmitting}
-            className="min-h-[44px] px-4 py-2 text-sm font-medium text-ink-600 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg transition-colors shadow-xs disabled:opacity-50"
+            className="min-h-[44px] px-4 py-2 text-sm font-medium text-ink-600 bg-card border border-line-strong hover:bg-subtle rounded-lg transition-colors shadow-xs disabled:opacity-50"
           >
             Cancel
           </button>

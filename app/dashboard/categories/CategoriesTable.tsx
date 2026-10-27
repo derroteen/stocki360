@@ -94,11 +94,11 @@ export default function CategoriesTable({ categories }: CategoriesTableProps) {
   return (
     <div className="w-full max-w-6xl mx-auto space-y-6">
       {/* Page header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-line pb-5">
         <div>
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold text-ink-900 font-serif">Categories</h1>
-            <span className="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-accent-50 text-accent-700 border border-accent-100">
+            <span className="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-accent-50 text-accent-text border border-accent-100">
               {activeCategories.length} active
             </span>
           </div>
@@ -119,13 +119,13 @@ export default function CategoriesTable({ categories }: CategoriesTableProps) {
       </div>
 
       {/* Active / Archived tabs */}
-      <div className="flex gap-1 bg-slate-100 rounded-lg p-1 w-fit">
+      <div className="flex gap-1 bg-subtle-strong rounded-lg p-1 w-fit">
         <button
           type="button"
           onClick={() => setView('active')}
           className={`min-h-[36px] px-4 py-1.5 text-sm font-medium rounded-md transition-colors cursor-pointer ${
             view === 'active'
-              ? 'bg-white text-ink-900 shadow-xs'
+              ? 'bg-card text-ink-900 shadow-xs'
               : 'text-ink-500 hover:text-ink-700'
           }`}
         >
@@ -136,7 +136,7 @@ export default function CategoriesTable({ categories }: CategoriesTableProps) {
           onClick={() => setView('archived')}
           className={`min-h-[36px] px-4 py-1.5 text-sm font-medium rounded-md transition-colors cursor-pointer ${
             view === 'archived'
-              ? 'bg-white text-ink-900 shadow-xs'
+              ? 'bg-card text-ink-900 shadow-xs'
               : 'text-ink-500 hover:text-ink-700'
           }`}
         >
@@ -153,8 +153,8 @@ export default function CategoriesTable({ categories }: CategoriesTableProps) {
 
       {/* Empty state */}
       {visibleCategories.length === 0 ? (
-        <div className="bg-surface border border-slate-200 rounded-xl p-12 text-center space-y-4">
-          <div className="w-12 h-12 rounded-full bg-accent-50 text-accent-500 border border-accent-100 flex items-center justify-center mx-auto text-xl font-serif font-bold">
+        <div className="bg-panel border border-line rounded-xl p-12 text-center space-y-4">
+          <div className="w-12 h-12 rounded-full bg-accent-50 text-accent-bright border border-accent-100 flex items-center justify-center mx-auto text-xl font-serif font-bold">
             C
           </div>
           <div className="space-y-1">
@@ -180,10 +180,10 @@ export default function CategoriesTable({ categories }: CategoriesTableProps) {
       ) : (
         <>
           {/* Desktop table */}
-          <div className="hidden sm:block overflow-hidden bg-surface border border-slate-200 rounded-xl shadow-xs">
+          <div className="hidden sm:block overflow-hidden bg-panel border border-line rounded-xl shadow-xs">
             <table className="w-full text-left border-collapse text-sm">
               <thead>
-                <tr className="border-b border-slate-200 bg-surface text-ink-700 font-medium">
+                <tr className="border-b border-line bg-panel text-ink-700 font-medium">
                   <th className="py-3.5 px-4">Name</th>
                   <th className="py-3.5 px-4">Description</th>
                   <th className="py-3.5 px-4 text-right">Actions</th>
@@ -194,7 +194,7 @@ export default function CategoriesTable({ categories }: CategoriesTableProps) {
                   <tr
                     key={category.id}
                     onClick={() => handleEditCategory(category)}
-                    className="cursor-pointer hover:bg-slate-100/60 transition-colors"
+                    className="cursor-pointer hover:bg-subtle-strong/60 transition-colors"
                   >
                     <td className="py-4 px-4 font-medium text-ink-900">
                       {category.name}
@@ -241,7 +241,7 @@ export default function CategoriesTable({ categories }: CategoriesTableProps) {
               <div
                 key={category.id}
                 onClick={() => handleEditCategory(category)}
-                className="bg-surface border border-slate-200 rounded-xl p-4 min-h-[44px] space-y-3 cursor-pointer hover:border-accent-500/50 active:bg-slate-100 transition-all"
+                className="bg-panel border border-line rounded-xl p-4 min-h-[44px] space-y-3 cursor-pointer hover:border-accent-500/50 active:bg-subtle-strong transition-all"
               >
                 <div>
                   <h4 className="font-semibold text-ink-900 text-base">
@@ -251,7 +251,7 @@ export default function CategoriesTable({ categories }: CategoriesTableProps) {
                     <p className="text-ink-600 text-sm mt-1">{category.description}</p>
                   )}
                 </div>
-                <div className="flex justify-end pt-2 border-t border-slate-200/60">
+                <div className="flex justify-end pt-2 border-t border-line/60">
                   {view === 'active' ? (
                     <button
                       type="button"

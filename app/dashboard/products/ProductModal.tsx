@@ -205,8 +205,8 @@ export default function ProductModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink-900/50 backdrop-blur-xs">
-      <div className="w-full max-w-lg bg-surface border border-slate-200 rounded-xl shadow-xl overflow-hidden flex flex-col max-h-[90vh] max-h-[90dvh]">
-        <div className="flex items-center justify-between border-b border-slate-200 px-6 sm:px-8 pt-6 sm:pt-8 pb-4 shrink-0">
+      <div className="w-full max-w-lg bg-panel border border-line rounded-xl shadow-xl overflow-hidden flex flex-col max-h-[90vh] max-h-[90dvh]">
+        <div className="flex items-center justify-between border-b border-line px-6 sm:px-8 pt-6 sm:pt-8 pb-4 shrink-0">
           <h2 className="text-xl font-bold text-ink-900 font-serif">
             {isEdit ? 'Edit Product' : 'Add Product'}
           </h2>
@@ -235,7 +235,7 @@ export default function ProductModal({
               required
               value={sku}
               onChange={(e) => setSku(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-white text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
+              className="w-full px-3 py-2 border border-line rounded-lg bg-card text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
               placeholder="e.g. PRD-001"
             />
           </div>
@@ -259,13 +259,13 @@ export default function ProductModal({
                       type="text"
                       value={row.barcode}
                       onChange={(e) => handleBarcodeRowChange(index, 'barcode', e.target.value)}
-                      className="flex-1 min-w-0 px-3 py-2 border border-slate-200 rounded-lg bg-white text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
+                      className="flex-1 min-w-0 px-3 py-2 border border-line rounded-lg bg-card text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
                       placeholder="e.g. 6009123456789"
                     />
                     <select
                       value={row.entryMode}
                       onChange={(e) => handleBarcodeRowChange(index, 'entryMode', e.target.value)}
-                      className="px-3 py-2 border border-slate-200 rounded-lg bg-white text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500 sm:w-44 shrink-0"
+                      className="px-3 py-2 border border-line rounded-lg bg-card text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500 sm:w-44 shrink-0"
                     >
                       <option value="individual">Sells as: Unit</option>
                       <option value="package" disabled={!hasPackaging}>
@@ -276,7 +276,7 @@ export default function ProductModal({
                       type="text"
                       value={row.label}
                       onChange={(e) => handleBarcodeRowChange(index, 'label', e.target.value)}
-                      className="px-3 py-2 border border-slate-200 rounded-lg bg-white text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500 sm:w-32 shrink-0"
+                      className="px-3 py-2 border border-line rounded-lg bg-card text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500 sm:w-32 shrink-0"
                       placeholder="Label (optional)"
                     />
                     <button
@@ -295,7 +295,7 @@ export default function ProductModal({
             <button
               type="button"
               onClick={handleAddBarcodeRow}
-              className="min-h-[44px] px-3 py-2 text-sm font-medium text-accent-700 bg-accent-50 hover:bg-accent-100 border border-accent-100 rounded-lg transition-colors"
+              className="min-h-[44px] px-3 py-2 text-sm font-medium text-accent-text bg-accent-50 hover:bg-accent-100 border border-accent-100 rounded-lg transition-colors"
             >
               + Add barcode
             </button>
@@ -310,7 +310,7 @@ export default function ProductModal({
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-white text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
+              className="w-full px-3 py-2 border border-line rounded-lg bg-card text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
               placeholder="Product Name"
             />
           </div>
@@ -323,7 +323,7 @@ export default function ProductModal({
               <select
                 value={categoryId}
                 onChange={(e) => setCategoryId(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-white text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
+                className="w-full px-3 py-2 border border-line rounded-lg bg-card text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
               >
                 <option value="">No Category</option>
                 {categories.map((cat) => (
@@ -341,7 +341,7 @@ export default function ProductModal({
               <select
                 value={supplierId}
                 onChange={(e) => setSupplierId(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-white text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
+                className="w-full px-3 py-2 border border-line rounded-lg bg-card text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
               >
                 <option value="">No Supplier</option>
                 {suppliers.map((sup) => (
@@ -364,7 +364,7 @@ export default function ProductModal({
                 required
                 value={costPrice}
                 onChange={(e) => setCostPrice(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-white text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
+                className="w-full px-3 py-2 border border-line rounded-lg bg-card text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
               />
             </div>
 
@@ -378,7 +378,7 @@ export default function ProductModal({
                 required
                 value={sellPrice}
                 onChange={(e) => setSellPrice(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-white text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
+                className="w-full px-3 py-2 border border-line rounded-lg bg-card text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
               />
             </div>
 
@@ -391,12 +391,12 @@ export default function ProductModal({
                 required
                 value={reorderLevel}
                 onChange={(e) => setReorderLevel(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-white text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
+                className="w-full px-3 py-2 border border-line rounded-lg bg-card text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-slate-200 pt-4 mt-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-line pt-4 mt-4">
             <div>
               <label className="block text-sm font-medium text-ink-700 mb-1">
                 Stock/Sale Unit
@@ -406,7 +406,7 @@ export default function ProductModal({
                 required
                 value={stockUnit}
                 onChange={(e) => setStockUnit(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-white text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
+                className="w-full px-3 py-2 border border-line rounded-lg bg-card text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
                 placeholder="e.g. packet, piece, bottle"
               />
             </div>
@@ -419,7 +419,7 @@ export default function ProductModal({
                 type="text"
                 value={packageUnit}
                 onChange={(e) => setPackageUnit(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-white text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
+                className="w-full px-3 py-2 border border-line rounded-lg bg-card text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
                 placeholder="e.g. bale, carton"
               />
             </div>
@@ -434,7 +434,7 @@ export default function ProductModal({
                 required={!!packageUnit}
                 value={unitsPerPackage}
                 onChange={(e) => setUnitsPerPackage(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-white text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
+                className="w-full px-3 py-2 border border-line rounded-lg bg-card text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
                 placeholder={packageUnit ? "e.g. 20" : ""}
                 disabled={!packageUnit}
               />
@@ -442,13 +442,13 @@ export default function ProductModal({
           </div>
           
           {packageUnit && unitsPerPackage && (
-            <p className="text-sm text-ink-600 bg-slate-50 p-2 rounded border border-slate-100">
+            <p className="text-sm text-ink-600 bg-subtle p-2 rounded border border-line-subtle">
               Conversion: <strong>1 {packageUnit} = {unitsPerPackage} {stockUnit}s</strong>
             </p>
           )}
 
           {hasPackaging && (
-            <div className="border-t border-slate-200 pt-4 mt-4 space-y-4">
+            <div className="border-t border-line pt-4 mt-4 space-y-4">
               <h3 className="text-sm font-semibold text-ink-900">
                 Bulk package pricing <span className="text-ink-500 font-normal">(optional)</span>
               </h3>
@@ -464,7 +464,7 @@ export default function ProductModal({
                     min="0"
                     value={packageCostPrice}
                     onChange={(e) => setPackageCostPrice(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-white text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
+                    className="w-full px-3 py-2 border border-line rounded-lg bg-card text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
                   />
                 </div>
 
@@ -478,7 +478,7 @@ export default function ProductModal({
                     min="0"
                     value={packageSellPrice}
                     onChange={(e) => setPackageSellPrice(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-white text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
+                    className="w-full px-3 py-2 border border-line rounded-lg bg-card text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
                   />
                 </div>
               </div>
@@ -486,7 +486,7 @@ export default function ProductModal({
               {packageSellPrice &&
                 Number(unitsPerPackage) > 0 &&
                 !isNaN(parseFloat(packageSellPrice)) && (
-                  <p className="text-sm text-ink-600 bg-slate-50 p-2 rounded border border-slate-100">
+                  <p className="text-sm text-ink-600 bg-subtle p-2 rounded border border-line-subtle">
                     Works out to Ksh{' '}
                     {(parseFloat(packageSellPrice) / Number(unitsPerPackage)).toLocaleString('en-KE', {
                       minimumFractionDigits: 2,
@@ -499,7 +499,7 @@ export default function ProductModal({
           )}
         </form>
 
-        <div className="flex items-center justify-end gap-3 border-t border-slate-200 px-6 sm:px-8 py-4 shrink-0">
+        <div className="flex items-center justify-end gap-3 border-t border-line px-6 sm:px-8 py-4 shrink-0">
           {isEdit && (
             <button
               type="button"
@@ -515,7 +515,7 @@ export default function ProductModal({
             type="button"
             onClick={onClose}
             disabled={loading}
-            className="min-h-[44px] px-4 py-2 text-sm font-medium text-ink-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+            className="min-h-[44px] px-4 py-2 text-sm font-medium text-ink-700 bg-subtle-strong hover:bg-subtle-active rounded-lg transition-colors"
           >
             Cancel
           </button>

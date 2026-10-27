@@ -64,7 +64,7 @@ export default function InviteModal({ businessId }: InviteModalProps) {
 
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink-900/50 p-4 backdrop-blur-xs">
-          <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
+          <div className="w-full max-w-md rounded-xl border border-line bg-card p-6 shadow-xl">
             <div className="mb-5 flex items-start justify-between gap-4">
               <div>
                 <h2 className="text-xl font-bold font-serif text-ink-900">Invite member</h2>
@@ -86,7 +86,7 @@ export default function InviteModal({ businessId }: InviteModalProps) {
                   required
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
-                  className="min-h-[44px] w-full rounded-lg border border-slate-300 px-3 py-2 text-ink-900 focus:border-accent-500 focus:outline-none focus:ring-2 focus:ring-accent-500"
+                  className="min-h-[44px] w-full rounded-lg border border-line-strong px-3 py-2 text-ink-900 focus:border-accent-500 focus:outline-none focus:ring-2 focus:ring-accent-500"
                   placeholder="teammate@example.com"
                 />
               </div>
@@ -96,15 +96,15 @@ export default function InviteModal({ businessId }: InviteModalProps) {
                   id="invite-role"
                   value={role}
                   onChange={(event) => setRole(event.target.value as InviteRole)}
-                  className="min-h-[44px] w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-ink-900 focus:border-accent-500 focus:outline-none focus:ring-2 focus:ring-accent-500"
+                  className="min-h-[44px] w-full rounded-lg border border-line-strong bg-card px-3 py-2 text-ink-900 focus:border-accent-500 focus:outline-none focus:ring-2 focus:ring-accent-500"
                 >
                   <option value="admin">Admin</option>
                   <option value="storekeeper">Storekeeper</option>
                   <option value="cashier">Cashier</option>
                 </select>
               </div>
-              <div className="flex justify-end gap-3 border-t border-slate-200 pt-4">
-                <button type="button" onClick={close} disabled={isSubmitting} className="min-h-[44px] rounded-lg bg-slate-100 px-4 py-2 text-sm font-medium text-ink-700 hover:bg-slate-200 disabled:opacity-50">Cancel</button>
+              <div className="flex justify-end gap-3 border-t border-line pt-4">
+                <button type="button" onClick={close} disabled={isSubmitting} className="min-h-[44px] rounded-lg bg-subtle-strong px-4 py-2 text-sm font-medium text-ink-700 hover:bg-subtle-active disabled:opacity-50">Cancel</button>
                 <button type="submit" disabled={isSubmitting} className="min-h-[44px] rounded-lg bg-accent-600 px-4 py-2 text-sm font-semibold text-white hover:bg-accent-700 disabled:opacity-50">{isSubmitting ? 'Sending...' : 'Send invite'}</button>
               </div>
             </form>

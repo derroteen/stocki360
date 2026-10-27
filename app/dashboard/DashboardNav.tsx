@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import type { User } from '@supabase/supabase-js';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
+import ThemeToggle from '@/components/ThemeToggle';
 
 function toInitial(value: string | null | undefined): string | null {
   const trimmed = value?.trim();
@@ -103,22 +104,22 @@ export default function DashboardNav() {
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-white border-b border-slate-200 shadow-2xs">
+    <header className="sticky top-0 z-40 bg-card border-b border-line shadow-2xs">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-2 sm:py-3 flex items-center justify-between gap-2 sm:gap-4">
         {/* Brand */}
         <Link href="/dashboard" className="flex items-center gap-2">
-          <span className="text-lg sm:text-xl font-bold font-serif text-accent-600 tracking-tight">
+          <span className="text-lg sm:text-xl font-bold font-serif text-accent-link tracking-tight">
             Stocki360
           </span>
         </Link>
 
         {/* Desktop Navigation Pills */}
-        <nav className="hidden md:flex items-center p-1 bg-slate-100/80 rounded-full border border-slate-200/80 text-xs sm:text-sm font-medium">
+        <nav className="hidden md:flex items-center p-1 bg-subtle-strong/80 rounded-full border border-line/80 text-xs sm:text-sm font-medium">
           <Link
             href="/dashboard"
             className={`px-3 sm:px-4 py-1.5 rounded-full transition-colors ${
               isDashboardActive
-                ? 'bg-accent-50 text-accent-700 font-semibold border border-accent-100 shadow-2xs'
+                ? 'bg-accent-50 text-accent-text font-semibold border border-accent-100 shadow-2xs'
                 : 'text-ink-500 hover:text-ink-900'
             }`}
           >
@@ -128,7 +129,7 @@ export default function DashboardNav() {
             href="/dashboard/products"
             className={`px-3 sm:px-4 py-1.5 rounded-full transition-colors ${
               isProductsActive
-                ? 'bg-accent-50 text-accent-700 font-semibold border border-accent-100 shadow-2xs'
+                ? 'bg-accent-50 text-accent-text font-semibold border border-accent-100 shadow-2xs'
                 : 'text-ink-500 hover:text-ink-900'
             }`}
           >
@@ -138,7 +139,7 @@ export default function DashboardNav() {
             href="/dashboard/team"
             className={`px-3 sm:px-4 py-1.5 rounded-full transition-colors ${
               isTeamActive
-                ? 'bg-accent-50 text-accent-700 font-semibold border border-accent-100 shadow-2xs'
+                ? 'bg-accent-50 text-accent-text font-semibold border border-accent-100 shadow-2xs'
                 : 'text-ink-500 hover:text-ink-900'
             }`}
           >
@@ -148,7 +149,7 @@ export default function DashboardNav() {
             href="/dashboard/purchases"
             className={`px-3 sm:px-4 py-1.5 rounded-full transition-colors ${
               isPurchasesActive
-                ? 'bg-accent-50 text-accent-700 font-semibold border border-accent-100 shadow-2xs'
+                ? 'bg-accent-50 text-accent-text font-semibold border border-accent-100 shadow-2xs'
                 : 'text-ink-500 hover:text-ink-900'
             }`}
           >
@@ -158,7 +159,7 @@ export default function DashboardNav() {
             href="/dashboard/sales"
             className={`px-3 sm:px-4 py-1.5 rounded-full transition-colors ${
               isSalesActive
-                ? 'bg-accent-50 text-accent-700 font-semibold border border-accent-100 shadow-2xs'
+                ? 'bg-accent-50 text-accent-text font-semibold border border-accent-100 shadow-2xs'
                 : 'text-ink-500 hover:text-ink-900'
             }`}
           >
@@ -168,7 +169,7 @@ export default function DashboardNav() {
             href="/dashboard/categories"
             className={`px-3 sm:px-4 py-1.5 rounded-full transition-colors ${
               isCategoriesActive
-                ? 'bg-accent-50 text-accent-700 font-semibold border border-accent-100 shadow-2xs'
+                ? 'bg-accent-50 text-accent-text font-semibold border border-accent-100 shadow-2xs'
                 : 'text-ink-500 hover:text-ink-900'
             }`}
           >
@@ -178,7 +179,7 @@ export default function DashboardNav() {
             href="/dashboard/suppliers"
             className={`px-3 sm:px-4 py-1.5 rounded-full transition-colors ${
               isSuppliersActive
-                ? 'bg-accent-50 text-accent-700 font-semibold border border-accent-100 shadow-2xs'
+                ? 'bg-accent-50 text-accent-text font-semibold border border-accent-100 shadow-2xs'
                 : 'text-ink-500 hover:text-ink-900'
             }`}
           >
@@ -188,15 +189,16 @@ export default function DashboardNav() {
 
         {/* Desktop User controls */}
         <div className="hidden md:flex items-center gap-2">
+          <ThemeToggle />
           <button
             type="button"
             onClick={handleLogout}
             disabled={isLoggingOut}
-            className="min-h-[36px] px-3 rounded-lg border border-slate-300 text-xs sm:text-sm font-medium text-ink-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            className="min-h-[36px] px-3 rounded-lg border border-line-strong text-xs sm:text-sm font-medium text-ink-700 hover:bg-subtle disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isLoggingOut ? 'Logging out...' : 'Log out'}
           </button>
-          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-accent-50 text-accent-700 border border-accent-100 flex items-center justify-center font-bold text-xs sm:text-sm font-serif shadow-2xs">
+          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-accent-50 text-accent-text border border-accent-100 flex items-center justify-center font-bold text-xs sm:text-sm font-serif shadow-2xs">
             {avatarInitial}
           </div>
         </div>
@@ -216,21 +218,24 @@ export default function DashboardNav() {
 
       {/* Mobile Menu Overlay */}
       {isMobileMenuOpen && (
-        <div className="md:hidden fixed inset-0 z-50 bg-white flex flex-col">
-          <div className="px-4 py-3 flex items-center justify-between border-b border-slate-200">
-            <span className="text-lg font-bold font-serif text-accent-600 tracking-tight">
+        <div className="md:hidden fixed inset-0 z-50 bg-card flex flex-col">
+          <div className="px-4 py-3 flex items-center justify-between border-b border-line">
+            <span className="text-lg font-bold font-serif text-accent-link tracking-tight">
               Stocki360
             </span>
-            <button
-              type="button"
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="p-2 text-ink-600 hover:text-ink-900 transition-colors -mr-2"
-              aria-label="Close menu"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+            <div className="flex items-center gap-2">
+              <ThemeToggle />
+              <button
+                type="button"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="min-h-10 min-w-10 p-2 text-ink-600 hover:text-ink-900 transition-colors"
+                aria-label="Close menu"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
           </div>
 
           <div className="flex-1 overflow-y-auto px-4 py-6 space-y-6">
@@ -240,8 +245,8 @@ export default function DashboardNav() {
                 onClick={() => setIsMobileMenuOpen(false)}
                 className={`px-4 py-3 rounded-xl font-medium transition-colors ${
                   isDashboardActive
-                    ? 'bg-accent-50 text-accent-700'
-                    : 'text-ink-600 active:bg-slate-50'
+                    ? 'bg-accent-50 text-accent-text'
+                    : 'text-ink-600 active:bg-subtle'
                 }`}
               >
                 Dashboard
@@ -251,8 +256,8 @@ export default function DashboardNav() {
                 onClick={() => setIsMobileMenuOpen(false)}
                 className={`px-4 py-3 rounded-xl font-medium transition-colors ${
                   isProductsActive
-                    ? 'bg-accent-50 text-accent-700'
-                    : 'text-ink-600 active:bg-slate-50'
+                    ? 'bg-accent-50 text-accent-text'
+                    : 'text-ink-600 active:bg-subtle'
                 }`}
               >
                 Products
@@ -262,8 +267,8 @@ export default function DashboardNav() {
                 onClick={() => setIsMobileMenuOpen(false)}
                 className={`px-4 py-3 rounded-xl font-medium transition-colors ${
                   isTeamActive
-                    ? 'bg-accent-50 text-accent-700'
-                    : 'text-ink-600 active:bg-slate-50'
+                    ? 'bg-accent-50 text-accent-text'
+                    : 'text-ink-600 active:bg-subtle'
                 }`}
               >
                 Team
@@ -273,8 +278,8 @@ export default function DashboardNav() {
                 onClick={() => setIsMobileMenuOpen(false)}
                 className={`px-4 py-3 rounded-xl font-medium transition-colors ${
                   isPurchasesActive
-                    ? 'bg-accent-50 text-accent-700'
-                    : 'text-ink-600 active:bg-slate-50'
+                    ? 'bg-accent-50 text-accent-text'
+                    : 'text-ink-600 active:bg-subtle'
                 }`}
               >
                 Purchases
@@ -284,8 +289,8 @@ export default function DashboardNav() {
                 onClick={() => setIsMobileMenuOpen(false)}
                 className={`px-4 py-3 rounded-xl font-medium transition-colors ${
                   isSalesActive
-                    ? 'bg-accent-50 text-accent-700'
-                    : 'text-ink-600 active:bg-slate-50'
+                    ? 'bg-accent-50 text-accent-text'
+                    : 'text-ink-600 active:bg-subtle'
                 }`}
               >
                 Sales
@@ -295,8 +300,8 @@ export default function DashboardNav() {
                 onClick={() => setIsMobileMenuOpen(false)}
                 className={`px-4 py-3 rounded-xl font-medium transition-colors ${
                   isCategoriesActive
-                    ? 'bg-accent-50 text-accent-700'
-                    : 'text-ink-600 active:bg-slate-50'
+                    ? 'bg-accent-50 text-accent-text'
+                    : 'text-ink-600 active:bg-subtle'
                 }`}
               >
                 Categories
@@ -306,17 +311,17 @@ export default function DashboardNav() {
                 onClick={() => setIsMobileMenuOpen(false)}
                 className={`px-4 py-3 rounded-xl font-medium transition-colors ${
                   isSuppliersActive
-                    ? 'bg-accent-50 text-accent-700'
-                    : 'text-ink-600 active:bg-slate-50'
+                    ? 'bg-accent-50 text-accent-text'
+                    : 'text-ink-600 active:bg-subtle'
                 }`}
               >
                 Suppliers
               </Link>
             </nav>
 
-            <div className="pt-6 border-t border-slate-200">
+            <div className="pt-6 border-t border-line">
               <div className="flex items-center gap-3 mb-4 px-2">
-                <div className="w-10 h-10 rounded-full bg-accent-50 text-accent-700 border border-accent-100 flex items-center justify-center font-bold text-sm font-serif shadow-2xs">
+                <div className="w-10 h-10 rounded-full bg-accent-50 text-accent-text border border-accent-100 flex items-center justify-center font-bold text-sm font-serif shadow-2xs">
                   {avatarInitial}
                 </div>
                 <div className="text-sm font-medium text-ink-900">

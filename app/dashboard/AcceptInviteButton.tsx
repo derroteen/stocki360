@@ -31,7 +31,7 @@ export default function AcceptInviteButton({ invitationId }: { invitationId: str
         type="button"
         onClick={handleAccept}
         disabled={isAccepting}
-        className="min-h-[36px] rounded-lg bg-white px-3 py-1.5 text-sm font-semibold text-accent-700 shadow-sm hover:bg-accent-50 disabled:opacity-60"
+        className="min-h-[36px] rounded-lg bg-card px-3 py-1.5 text-sm font-semibold text-accent-text shadow-sm hover:bg-accent-50 disabled:opacity-60"
       >
         {isAccepting ? 'Accepting...' : 'Accept'}
       </button>

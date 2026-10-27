@@ -101,7 +101,7 @@ export default async function DashboardOverviewPage() {
       {/* Stat Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
         {/* Total Products */}
-        <div className="bg-surface border border-slate-200 rounded-xl p-5 sm:p-6 space-y-2 shadow-2xs">
+        <div className="bg-panel border border-line rounded-xl p-5 sm:p-6 space-y-2 shadow-2xs">
           <span className="text-xs font-semibold uppercase tracking-wider text-ink-500">
             Total Products
           </span>
@@ -111,7 +111,7 @@ export default async function DashboardOverviewPage() {
         </div>
 
         {/* Stock Value */}
-        <div className="bg-surface border border-slate-200 rounded-xl p-5 sm:p-6 space-y-2 shadow-2xs">
+        <div className="bg-panel border border-line rounded-xl p-5 sm:p-6 space-y-2 shadow-2xs">
           <span className="text-xs font-semibold uppercase tracking-wider text-ink-500">
             Stock Value
           </span>
@@ -126,7 +126,7 @@ export default async function DashboardOverviewPage() {
           className={`rounded-xl p-5 sm:p-6 space-y-2 shadow-2xs border block transition-all hover:shadow-sm ${
             lowStockAndOutProducts.length > 0
               ? outOfStockCount > 0
-                ? 'bg-red-50 border-red-200 text-red-800'
+                ? 'bg-danger-50 border-danger-200 text-danger-800'
                 : 'bg-warn-100 border-warn-600/30 text-warn-700'
               : 'bg-good-100 border-good-600/30 text-good-700'
           }`}
@@ -153,9 +153,9 @@ export default async function DashboardOverviewPage() {
       {/* Main Grid: Stock Alerts Section + Chart Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Low-Stock & Out-of-Stock Alert Card */}
-        <div className="lg:col-span-1 bg-surface border border-slate-200 rounded-xl p-5 sm:p-6 space-y-4 shadow-2xs flex flex-col justify-between">
+        <div className="lg:col-span-1 bg-panel border border-line rounded-xl p-5 sm:p-6 space-y-4 shadow-2xs flex flex-col justify-between">
           <div className="space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+            <div className="flex items-center justify-between border-b border-line pb-3">
               <div>
                 <h2 className="text-base font-bold text-ink-900 font-serif flex items-center gap-2">
                   <span>Stock Alerts</span>
@@ -184,7 +184,7 @@ export default async function DashboardOverviewPage() {
                 </p>
               </div>
             ) : (
-              <div className="divide-y divide-slate-100">
+              <div className="divide-y divide-line-subtle">
                 {displayedAlerts.map((product) => {
                   const status = getStockStatus(
                     product.current_stock ?? 0,
@@ -196,16 +196,16 @@ export default async function DashboardOverviewPage() {
                     <Link
                       key={product.id}
                       href="/dashboard/products/low-stock"
-                      className="py-3 flex items-start justify-between gap-3 group hover:bg-slate-50/80 -mx-2 px-2 rounded-lg transition-colors"
+                      className="py-3 flex items-start justify-between gap-3 group hover:bg-subtle/80 -mx-2 px-2 rounded-lg transition-colors"
                     >
                       <div className="min-w-0 space-y-0.5">
                         <div className="flex items-center gap-1.5">
                           {isOutOfStock ? (
-                            <span className="text-red-600 text-xs">🔴</span>
+                            <span className="text-danger-600 text-xs">🔴</span>
                           ) : (
-                            <span className="text-amber-500 text-xs">⚠️</span>
+                            <span className="text-warn-500 text-xs">⚠️</span>
                           )}
-                          <span className="font-semibold text-sm text-ink-900 truncate group-hover:text-accent-600 transition-colors">
+                          <span className="font-semibold text-sm text-ink-900 truncate group-hover:text-accent-link transition-colors">
                             {product.name}
                           </span>
                         </div>
@@ -216,11 +216,11 @@ export default async function DashboardOverviewPage() {
 
                       <div className="text-right shrink-0">
                         {isOutOfStock ? (
-                          <span className="inline-block text-xs font-bold text-red-600 uppercase tracking-tight">
+                          <span className="inline-block text-xs font-bold text-danger-600 uppercase tracking-tight">
                             OUT OF STOCK
                           </span>
                         ) : (
-                          <span className="inline-block text-xs font-semibold text-amber-800">
+                          <span className="inline-block text-xs font-semibold text-warn-700">
                             {product.current_stock ?? 0} units left
                           </span>
                         )}
@@ -233,10 +233,10 @@ export default async function DashboardOverviewPage() {
           </div>
 
           {lowStockAndOutProducts.length > 0 && (
-            <div className="pt-3 border-t border-slate-100">
+            <div className="pt-3 border-t border-line-subtle">
               <Link
                 href="/dashboard/products/low-stock"
-                className="text-xs font-semibold text-accent-600 hover:text-accent-700 flex items-center justify-between group min-h-[36px]"
+                className="text-xs font-semibold text-accent-link hover:text-accent-text flex items-center justify-between group min-h-[36px]"
               >
                 <span>View all {lowStockAndOutProducts.length} low-stock products</span>
                 <span className="group-hover:translate-x-0.5 transition-transform">→</span>
@@ -246,8 +246,8 @@ export default async function DashboardOverviewPage() {
         </div>
 
         {/* Stock Chart Section */}
-        <div className="lg:col-span-2 bg-surface border border-slate-200 rounded-xl p-5 sm:p-6 space-y-4 shadow-2xs">
-          <div className="flex items-center justify-between border-b border-slate-200 pb-4">
+        <div className="lg:col-span-2 bg-panel border border-line rounded-xl p-5 sm:p-6 space-y-4 shadow-2xs">
+          <div className="flex items-center justify-between border-b border-line pb-4">
             <div>
               <h2 className="text-lg font-bold text-ink-900 font-serif">
                 Stock Levels per Product
@@ -260,7 +260,7 @@ export default async function DashboardOverviewPage() {
 
           {totalProducts === 0 ? (
             <div className="py-12 text-center space-y-4">
-              <div className="w-12 h-12 rounded-full bg-accent-50 text-accent-500 border border-accent-100 flex items-center justify-center mx-auto text-xl font-serif font-bold">
+              <div className="w-12 h-12 rounded-full bg-accent-50 text-accent-bright border border-accent-100 flex items-center justify-center mx-auto text-xl font-serif font-bold">
                 📊
               </div>
               <div className="space-y-1">

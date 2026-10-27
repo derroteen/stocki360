@@ -105,11 +105,11 @@ export default function ProductsTable({ active, archived, allCategories, allSupp
   return (
     <div className="w-full max-w-6xl mx-auto space-y-6">
       {/* Header section */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-line pb-5">
         <div>
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold text-ink-900 font-serif">Products</h1>
-            <span className="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-accent-50 text-accent-700 border border-accent-100">
+            <span className="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-accent-50 text-accent-text border border-accent-100">
               {products.length} {products.length === 1 ? 'product' : 'products'}
             </span>
           </div>
@@ -119,7 +119,7 @@ export default function ProductsTable({ active, archived, allCategories, allSupp
         </div>
 
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-          <div className="inline-flex items-center p-1 bg-slate-100/80 rounded-full border border-slate-200/80 text-xs sm:text-sm font-medium">
+          <div className="inline-flex items-center p-1 bg-subtle-strong/80 rounded-full border border-line/80 text-xs sm:text-sm font-medium">
             <button
               type="button"
               onClick={() => {
@@ -128,7 +128,7 @@ export default function ProductsTable({ active, archived, allCategories, allSupp
               }}
               className={`px-3 sm:px-4 py-1.5 rounded-full transition-colors ${
                 view === 'active'
-                  ? 'bg-accent-50 text-accent-700 font-semibold border border-accent-100 shadow-2xs'
+                  ? 'bg-accent-50 text-accent-text font-semibold border border-accent-100 shadow-2xs'
                   : 'text-ink-500 hover:text-ink-900'
               }`}
             >
@@ -142,7 +142,7 @@ export default function ProductsTable({ active, archived, allCategories, allSupp
               }}
               className={`px-3 sm:px-4 py-1.5 rounded-full transition-colors ${
                 view === 'archived'
-                  ? 'bg-accent-50 text-accent-700 font-semibold border border-accent-100 shadow-2xs'
+                  ? 'bg-accent-50 text-accent-text font-semibold border border-accent-100 shadow-2xs'
                   : 'text-ink-500 hover:text-ink-900'
               }`}
             >
@@ -183,8 +183,8 @@ export default function ProductsTable({ active, archived, allCategories, allSupp
 
       {/* Empty State */}
       {products.length === 0 ? (
-        <div className="bg-surface border border-slate-200 rounded-xl p-12 text-center space-y-4">
-          <div className="w-12 h-12 rounded-full bg-accent-50 text-accent-500 border border-accent-100 flex items-center justify-center mx-auto text-xl font-serif font-bold">
+        <div className="bg-panel border border-line rounded-xl p-12 text-center space-y-4">
+          <div className="w-12 h-12 rounded-full bg-accent-50 text-accent-bright border border-accent-100 flex items-center justify-center mx-auto text-xl font-serif font-bold">
             P
           </div>
           <div className="space-y-1">
@@ -214,10 +214,10 @@ export default function ProductsTable({ active, archived, allCategories, allSupp
       ) : (
         <>
           {/* Desktop Table (screens >= 640px) */}
-          <div className="hidden sm:block overflow-hidden bg-surface border border-slate-200 rounded-xl shadow-xs">
+          <div className="hidden sm:block overflow-hidden bg-panel border border-line rounded-xl shadow-xs">
             <table className="w-full text-left border-collapse text-sm">
               <thead>
-                <tr className="border-b border-slate-200 bg-surface text-ink-700 font-medium">
+                <tr className="border-b border-line bg-panel text-ink-700 font-medium">
                   <th className="py-3.5 px-4">SKU</th>
                   <th className="py-3.5 px-4">Name</th>
                   <th className="py-3.5 px-4">Category</th>
@@ -238,7 +238,7 @@ export default function ProductsTable({ active, archived, allCategories, allSupp
                     onClick={view === 'active' ? () => handleEditProduct(product) : undefined}
                     className={
                       view === 'active'
-                        ? 'cursor-pointer hover:bg-slate-100/60 transition-colors'
+                        ? 'cursor-pointer hover:bg-subtle-strong/60 transition-colors'
                         : 'transition-colors'
                     }
                   >
@@ -279,8 +279,8 @@ export default function ProductsTable({ active, archived, allCategories, allSupp
                         const status = getStockStatus(product.current_stock ?? 0, product.reorder_level ?? 0);
                         if (status === 'out_of_stock') {
                           return (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700 border border-red-200">
-                              <span className="w-1.5 h-1.5 rounded-full bg-red-600" />
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-danger-100 text-danger-700 border border-danger-200">
+                              <span className="w-1.5 h-1.5 rounded-full bg-danger-600" />
                               Out of stock
                             </span>
                           );
@@ -310,7 +310,7 @@ export default function ProductsTable({ active, archived, allCategories, allSupp
                               e.stopPropagation();
                               setHistoryProduct(product);
                             }}
-                            className="min-h-[44px] px-3 py-1.5 text-xs font-medium text-ink-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-lg transition-colors inline-flex items-center gap-1 cursor-pointer"
+                            className="min-h-[44px] px-3 py-1.5 text-xs font-medium text-ink-700 bg-subtle-strong hover:bg-subtle-active border border-line rounded-lg transition-colors inline-flex items-center gap-1 cursor-pointer"
                           >
                             History
                           </button>
@@ -320,7 +320,7 @@ export default function ProductsTable({ active, archived, allCategories, allSupp
                               e.stopPropagation();
                               setMovementProduct(product);
                             }}
-                            className="min-h-[44px] px-3 py-1.5 text-xs font-medium text-accent-700 bg-accent-50 hover:bg-accent-100 border border-accent-100 rounded-lg transition-colors inline-flex items-center gap-1 cursor-pointer"
+                            className="min-h-[44px] px-3 py-1.5 text-xs font-medium text-accent-text bg-accent-50 hover:bg-accent-100 border border-accent-100 rounded-lg transition-colors inline-flex items-center gap-1 cursor-pointer"
                           >
                             Record movement
                           </button>
@@ -352,9 +352,9 @@ export default function ProductsTable({ active, archived, allCategories, allSupp
               <div
                 key={product.id}
                 onClick={view === 'active' ? () => handleEditProduct(product) : undefined}
-                className={`bg-surface border border-slate-200 rounded-xl p-4 min-h-[44px] space-y-3 ${
+                className={`bg-panel border border-line rounded-xl p-4 min-h-[44px] space-y-3 ${
                   view === 'active'
-                    ? 'cursor-pointer hover:border-accent-500/50 active:bg-slate-100 transition-all'
+                    ? 'cursor-pointer hover:border-accent-500/50 active:bg-subtle-strong transition-all'
                     : ''
                 }`}
               >
@@ -378,8 +378,8 @@ export default function ProductsTable({ active, archived, allCategories, allSupp
                     const status = getStockStatus(product.current_stock ?? 0, product.reorder_level ?? 0);
                     if (status === 'out_of_stock') {
                       return (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700 border border-red-200">
-                          <span className="w-1.5 h-1.5 rounded-full bg-red-600" />
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-danger-100 text-danger-700 border border-danger-200">
+                          <span className="w-1.5 h-1.5 rounded-full bg-danger-600" />
                           Out of stock
                         </span>
                       );
@@ -401,7 +401,7 @@ export default function ProductsTable({ active, archived, allCategories, allSupp
                   })()}
                 </div>
 
-                <div className="flex items-center justify-between gap-3 text-sm pt-2 border-t border-slate-200/60">
+                <div className="flex items-center justify-between gap-3 text-sm pt-2 border-t border-line/60">
                   <div className="text-ink-700 min-w-0 flex-1">
                     <span className="text-ink-500 text-xs block">Stock</span>
                     <span className="font-mono font-medium">{product.current_stock ?? 0} {product.stock_unit || 'unit'}s</span>
@@ -427,7 +427,7 @@ export default function ProductsTable({ active, archived, allCategories, allSupp
                         e.stopPropagation();
                         setHistoryProduct(product);
                       }}
-                      className="min-h-[44px] w-full px-3 py-1.5 text-xs font-medium text-ink-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-lg transition-colors cursor-pointer"
+                      className="min-h-[44px] w-full px-3 py-1.5 text-xs font-medium text-ink-700 bg-subtle-strong hover:bg-subtle-active border border-line rounded-lg transition-colors cursor-pointer"
                     >
                       History
                     </button>
@@ -437,7 +437,7 @@ export default function ProductsTable({ active, archived, allCategories, allSupp
                         e.stopPropagation();
                         setMovementProduct(product);
                       }}
-                      className="min-h-[44px] w-full px-3 py-1.5 text-xs font-medium text-accent-700 bg-accent-50 hover:bg-accent-100 border border-accent-100 rounded-lg transition-colors cursor-pointer"
+                      className="min-h-[44px] w-full px-3 py-1.5 text-xs font-medium text-accent-text bg-accent-50 hover:bg-accent-100 border border-accent-100 rounded-lg transition-colors cursor-pointer"
                     >
                       Record movement
                     </button>
