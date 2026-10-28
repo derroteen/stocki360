@@ -38,7 +38,12 @@ const SCAN_DEBOUNCE_MS = 2000;
 const BANNER_DURATION_MS = 1500;
 
 export default function CameraScanner({ onScan, onClose, totalQuantity }: CameraScannerProps) {
-  const [status, setStatus] = useState<ScannerStatus>('requesting');
+  const [status, setStatus] = useState<ScannerStatus>(() => {
+    const BarcodeDetectorCtor = (
+      window as unknown as { BarcodeDetector?: BarcodeDetectorConstructor }
+    ).BarcodeDetector;
+    return BarcodeDetectorCtor ? 'requesting' : 'unsupported';
+  });
   const [banner, setBanner] = useState<Banner | null>(null);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -95,7 +100,6 @@ export default function CameraScanner({ onScan, onClose, totalQuantity }: Camera
     ).BarcodeDetector;
 
     if (!BarcodeDetectorCtor) {
-      setStatus('unsupported');
       return;
     }
 
