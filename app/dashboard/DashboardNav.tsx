@@ -190,6 +190,16 @@ export default function DashboardNav() {
         {/* Desktop User controls */}
         <div className="hidden md:flex items-center gap-2">
           <ThemeToggle />
+          <Link
+            href="/"
+            aria-label="Back to home page"
+            className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-lg border border-line-strong px-3 text-xs sm:text-sm font-medium text-ink-700 transition-colors hover:bg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-card"
+          >
+            <svg aria-hidden="true" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+              <path strokeLinecap="round" strokeLinejoin="round" d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1V10Z" />
+            </svg>
+            Home
+          </Link>
           <button
             type="button"
             onClick={handleLogout}
@@ -316,6 +326,17 @@ export default function DashboardNav() {
                 }`}
               >
                 Suppliers
+              </Link>
+              <Link
+                href="/"
+                aria-label="Back to home page"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="flex min-h-10 items-center gap-2 rounded-xl px-4 py-3 font-medium text-ink-600 transition-colors hover:bg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-card"
+              >
+                <svg aria-hidden="true" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1V10Z" />
+                </svg>
+                Home
               </Link>
             </nav>
 

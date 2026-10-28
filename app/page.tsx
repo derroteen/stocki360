@@ -1,10 +1,10 @@
-import Link from "next/link";
 import ThemeToggle from "@/components/ThemeToggle";
 import Typewriter from "@/components/landing/Typewriter";
 import LiveOverviewCard from "@/components/landing/LiveOverviewCard";
 import ProductWalkthrough from "@/components/landing/ProductWalkthrough";
 import { BRAND_COMPANY_NAME, BRAND_CONTACT_EMAIL } from "@/lib/brand";
 import LiveCommandCenter from "@/components/landing/LiveCommandCenter";
+import AuthAwareActions from "@/components/landing/AuthAwareActions";
 
 export default function Home() {
   const features = [
@@ -57,12 +57,7 @@ export default function Home() {
           <span className="font-serif text-xl font-bold tracking-tight text-accent-link">Stocki360</span>
           <div className="flex items-center gap-2">
             <ThemeToggle />
-            <Link
-              href="/login"
-              className="inline-flex min-h-[40px] items-center justify-center rounded-lg border border-line-strong px-4 text-sm font-medium text-ink-700 transition-colors hover:bg-subtle"
-            >
-              Sign In
-            </Link>
+            <AuthAwareActions variant="header" />
           </div>
         </div>
       </header>
@@ -89,20 +84,7 @@ export default function Home() {
                   <li className="landing-feature rounded-lg border border-line bg-subtle px-3 py-2 sm:col-span-2">Know what is in your inventory and reduce stock-related mistakes</li>
                 </ul>
 
-                <div className="landing-actions flex flex-col gap-3 pt-2 sm:flex-row">
-                  <Link
-                    href="/login"
-                    className="inline-flex min-h-[44px] items-center justify-center rounded-lg bg-accent-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-accent-700"
-                  >
-                    Get Started
-                  </Link>
-                  <Link
-                    href="/login"
-                    className="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-line-strong px-5 py-2.5 text-sm font-semibold text-ink-700 transition-colors hover:bg-subtle"
-                  >
-                    Sign In
-                  </Link>
-                </div>
+                <AuthAwareActions variant="hero" />
               </Typewriter>
             </div>
 
@@ -176,20 +158,7 @@ export default function Home() {
             <p className="font-serif text-lg font-bold text-accent-link">Stocki360</p>
             <p className="text-sm text-ink-500">Inventory management for local retailers, wholesalers, and SMEs.</p>
           </div>
-          <div className="flex items-center gap-3">
-            <Link
-              href="/login"
-              className="inline-flex min-h-[40px] items-center justify-center rounded-lg bg-accent-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-accent-700"
-            >
-              Get Started
-            </Link>
-            <Link
-              href="/login"
-              className="inline-flex min-h-[40px] items-center justify-center rounded-lg border border-line-strong px-4 text-sm font-semibold text-ink-700 transition-colors hover:bg-subtle"
-            >
-              Sign In
-            </Link>
-          </div>
+          <AuthAwareActions variant="footer" />
         </div>
         <div className="mx-auto mt-6 w-full max-w-6xl border-t border-line px-4 pt-4 sm:px-6" />
         <div className="mx-auto flex w-full max-w-6xl flex-col items-center gap-2 px-4 text-center text-xs text-ink-500 sm:flex-row sm:justify-between sm:px-6 sm:text-left">

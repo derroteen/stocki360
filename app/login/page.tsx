@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import ThemeToggle from '@/components/ThemeToggle';
@@ -143,6 +144,15 @@ export default function LoginPage() {
       {/* Right Panel - Form Container */}
       <div className="w-full lg:w-1/2 flex-1 flex items-center justify-center p-6 sm:p-12 lg:p-16 bg-card">
         <div className="w-full max-w-md space-y-6">
+          <Link
+            href="/"
+            className="inline-flex min-h-10 items-center gap-2 rounded-lg px-2 text-sm font-medium text-ink-600 transition-colors hover:bg-subtle hover:text-ink-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-card"
+          >
+            <svg aria-hidden="true" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+              <path strokeLinecap="round" strokeLinejoin="round" d="m15 18-6-6 6-6M9 12h12" />
+            </svg>
+            Back to home
+          </Link>
           <div className="flex items-center justify-between lg:justify-end">
             <div className="lg:hidden text-2xl font-bold font-serif text-accent-link mb-2">
               Stocki360
