@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useSyncExternalStore } from 'react';
 import AcceptInviteButton from './AcceptInviteButton';
 
 interface InvitationBannerProps {
@@ -9,18 +9,35 @@ interface InvitationBannerProps {
   role: string;
 }
 
-export default function InvitationBanner({ invitationId, businessName, role }: InvitationBannerProps) {
-  const [isDismissed, setIsDismissed] = useState(false);
+const INVITATION_DISMISSED_EVENT = 'stocki360-invitation-dismissed';
 
-  useEffect(() => {
-    setIsDismissed(sessionStorage.getItem(`stocki360-invitation-dismissed-${invitationId}`) === 'true');
-  }, [invitationId]);
+function getDismissalStorageKey(invitationId: string) {
+  return `stocki360-invitation-dismissed-${invitationId}`;
+}
+
+function subscribeToDismissal(invitationId: string, onStoreChange: () => void) {
+  const handleDismissal = (event: Event) => {
+    if ((event as CustomEvent<string>).detail === invitationId) {
+      onStoreChange();
+    }
+  };
+
+  window.addEventListener(INVITATION_DISMISSED_EVENT, handleDismissal);
+  return () => window.removeEventListener(INVITATION_DISMISSED_EVENT, handleDismissal);
+}
+
+export default function InvitationBanner({ invitationId, businessName, role }: InvitationBannerProps) {
+  const isDismissed = useSyncExternalStore(
+    (onStoreChange) => subscribeToDismissal(invitationId, onStoreChange),
+    () => sessionStorage.getItem(getDismissalStorageKey(invitationId)) === 'true',
+    () => false,
+  );
 
   if (isDismissed) return null;
 
   const dismiss = () => {
-    sessionStorage.setItem(`stocki360-invitation-dismissed-${invitationId}`, 'true');
-    setIsDismissed(true);
+    sessionStorage.setItem(getDismissalStorageKey(invitationId), 'true');
+    window.dispatchEvent(new CustomEvent(INVITATION_DISMISSED_EVENT, { detail: invitationId }));
   };
 
   return (
