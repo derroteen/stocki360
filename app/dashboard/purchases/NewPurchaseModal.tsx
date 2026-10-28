@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Supplier, ProductStockLevel, CreatePurchaseItemPayload } from '@/lib/supabase/types';
 
 interface NewPurchaseModalProps {
@@ -36,35 +36,35 @@ export default function NewPurchaseModal({
   products,
   onSuccess,
 }: NewPurchaseModalProps) {
+  if (!isOpen) return null;
+
+  return (
+    <NewPurchaseForm
+      key="new"
+      onClose={onClose}
+      suppliers={suppliers}
+      products={products}
+      onSuccess={onSuccess}
+    />
+  );
+}
+
+function NewPurchaseForm({
+  onClose,
+  suppliers,
+  products,
+  onSuccess,
+}: Omit<NewPurchaseModalProps, 'isOpen'>) {
   const [supplierId, setSupplierId] = useState('');
   const [referenceNumber, setReferenceNumber] = useState('');
-  const [purchaseDate, setPurchaseDate] = useState('');
+  const [purchaseDate, setPurchaseDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [notes, setNotes] = useState('');
-  const [idempotencyKey, setIdempotencyKey] = useState('');
+  const [idempotencyKey] = useState(() => crypto.randomUUID());
 
   const [items, setItems] = useState<FormItem[]>([emptyItem()]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Initialize defaults on open. A new idempotency key is generated every
-  // time the modal transitions closed -> open, so re-opening for a new
-  // purchase never reuses a prior submission's key. Within one open
-  // session (including retries after a failed submit), the key stays the
-  // same on purpose.
-  useEffect(() => {
-    if (isOpen) {
-      setError(null);
-      setSupplierId('');
-      setReferenceNumber('');
-      setPurchaseDate(new Date().toISOString().split('T')[0]);
-      setNotes('');
-      setIdempotencyKey(crypto.randomUUID());
-      setItems([emptyItem()]);
-    }
-  }, [isOpen]);
-
-  if (!isOpen) return null;
 
   const getProduct = (productId: string) => products.find((p) => p.id === productId) || null;
 
