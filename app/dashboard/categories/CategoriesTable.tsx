@@ -84,8 +84,8 @@ export default function CategoriesTable({ categories }: CategoriesTableProps) {
 
       setConfirmTarget(null);
       router.refresh();
-    } catch (error: any) {
-      setActionError(error?.message ?? `Unable to ${label} category.`);
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : `Unable to ${label} category.`);
     } finally {
       setIsActionSubmitting(false);
     }

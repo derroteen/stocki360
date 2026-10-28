@@ -88,6 +88,7 @@ export default function CameraScanner({ onScan, onClose, totalQuantity }: Camera
 
   useEffect(() => {
     let cancelled = false;
+    const videoElement = videoRef.current;
 
     const BarcodeDetectorCtor = (
       window as unknown as { BarcodeDetector?: BarcodeDetectorConstructor }
@@ -168,8 +169,8 @@ export default function CameraScanner({ onScan, onClose, totalQuantity }: Camera
       streamRef.current?.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
 
-      if (videoRef.current) {
-        videoRef.current.srcObject = null;
+      if (videoElement) {
+        videoElement.srcObject = null;
       }
     };
   }, []);

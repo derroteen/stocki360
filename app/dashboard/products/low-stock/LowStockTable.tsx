@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ProductStockLevel, Category, Supplier, ProductBarcode } from '@/lib/supabase/types';
-import { getStockStatus, StockStatus, prioritizeLowStockProducts } from '@/lib/stock-alerts';
+import { getStockStatus, prioritizeLowStockProducts } from '@/lib/stock-alerts';
 import StockMovementModal from '../StockMovementModal';
 import ProductModal from '../ProductModal';
 
@@ -49,14 +49,6 @@ export default function LowStockTable({
       : filter === 'low_stock'
       ? lowStockProducts
       : prioritizedProducts;
-
-  const formatCurrency = (val: number | null | undefined) => {
-    return new Intl.NumberFormat('en-KE', {
-      style: 'currency',
-      currency: 'KES',
-      maximumFractionDigits: 0,
-    }).format(val ?? 0);
-  };
 
   const handleSaved = () => {
     router.refresh();

@@ -82,8 +82,8 @@ export default function ProductsTable({ active, archived, allCategories, allSupp
       }
 
       router.refresh();
-    } catch (error: any) {
-      setRestoreError(error?.message ?? 'Unable to restore product.');
+    } catch (error) {
+      setRestoreError(error instanceof Error ? error.message : 'Unable to restore product.');
     } finally {
       setRestoreLoadingId(null);
     }

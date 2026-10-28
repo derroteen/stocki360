@@ -87,8 +87,8 @@ export default function StockMovementModal({
       onSaved();
       resetSubmissionKey();
       onClose();
-    } catch (err: any) {
-      setError(err.message || 'An error occurred while recording stock movement');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred while recording stock movement');
     } finally {
       setLoading(false);
     }

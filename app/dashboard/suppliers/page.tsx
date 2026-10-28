@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import SuppliersTable from './SuppliersTable';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { resolveActiveBusinessContext } from '@/lib/supabase/business-context';
+import { Supplier } from '@/lib/supabase/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,8 +39,8 @@ export default async function SuppliersPage() {
 
   const activeBusinessId = resolution.context.businessId;
 
-  let suppliers: any[] = [];
-  let purchases: any[] = [];
+  let suppliers: Supplier[] = [];
+  let purchases: { supplier_id: string | null; total_amount: number | null }[] = [];
 
   try {
     const [

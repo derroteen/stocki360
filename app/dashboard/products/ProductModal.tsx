@@ -169,8 +169,8 @@ export default function ProductModal({
         if (onSaveSuccess) onSaveSuccess();
         onClose();
       }
-    } catch (err: any) {
-      setError(err.message || 'An error occurred while saving the product');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred while saving the product');
     } finally {
       setLoading(false);
     }
@@ -196,8 +196,8 @@ export default function ProductModal({
       router.refresh();
       if (onSaveSuccess) onSaveSuccess();
       onClose();
-    } catch (err: any) {
-      setError(err.message || 'An error occurred while archiving the product');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred while archiving the product');
     } finally {
       setLoading(false);
     }

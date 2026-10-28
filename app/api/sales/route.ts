@@ -5,13 +5,22 @@ import { CreateSalePayload } from '@/lib/supabase/types';
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
+interface SaleItemInput {
+  productId?: unknown;
+  entryMode?: unknown;
+  quantity?: unknown;
+  unitPrice?: unknown;
+  packageQuantity?: unknown;
+  packageUnitPrice?: unknown;
+}
+
 function toNonEmptyTrimmedString(value: unknown): string | null {
   if (typeof value !== 'string') return null;
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed : null;
 }
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   const supabase = await createSupabaseServerClient();
   const resolution = await resolveActiveBusinessContext(supabase);
 
@@ -97,7 +106,7 @@ export async function POST(request: NextRequest) {
   const paymentMethod = toNonEmptyTrimmedString(body.paymentMethod ?? null);
   const notes = toNonEmptyTrimmedString(body.notes ?? null);
   const saleDateInput = toNonEmptyTrimmedString(body.saleDate ?? null);
-  const rawItems = Array.isArray(body.items) ? body.items : [];
+  const rawItems: SaleItemInput[] = Array.isArray(body.items) ? body.items : [];
 
   if (rawItems.length === 0) {
     return NextResponse.json({ error: 'At least one sale item is required.' }, { status: 400 });
@@ -107,7 +116,7 @@ export async function POST(request: NextRequest) {
   const rpcItems: Record<string, unknown>[] = [];
 
   for (let i = 0; i < rawItems.length; i++) {
-    const item = rawItems[i] as any;
+    const item = rawItems[i];
     const productId = toNonEmptyTrimmedString(item?.productId);
 
     if (!productId || !uuidPattern.test(productId)) {

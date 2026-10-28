@@ -5,6 +5,15 @@ import { CreatePurchasePayload, CreatePurchaseItemPayload } from '@/lib/supabase
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
+interface PurchaseItemInput {
+  productId?: unknown;
+  entryMode?: unknown;
+  quantity?: unknown;
+  unitCost?: unknown;
+  packageQuantity?: unknown;
+  packageUnitCost?: unknown;
+}
+
 function toNonEmptyTrimmedString(value: unknown): string | null {
   if (typeof value !== 'string') return null;
   const trimmed = value.trim();
@@ -66,8 +75,8 @@ export async function GET(request: NextRequest) {
 
   // If filtered by productId, filter client-side / relationally
   if (productId && uuidPattern.test(productId)) {
-    results = results.filter((p: any) =>
-      p.purchase_items?.some((item: any) => item.product_id === productId)
+    results = results.filter((purchase) =>
+      purchase.purchase_items?.some((item) => item.product_id === productId)
     );
   }
 
@@ -100,7 +109,7 @@ export async function POST(request: NextRequest) {
   const notes = toNonEmptyTrimmedString(body.notes);
   const purchaseDateInput = toNonEmptyTrimmedString(body.purchaseDate);
   const idempotencyKey = toNonEmptyTrimmedString(body.idempotencyKey);
-  const rawItems = Array.isArray(body.items) ? (body.items as any[]) : [];
+  const rawItems: PurchaseItemInput[] = Array.isArray(body.items) ? body.items : [];
 
   if (!idempotencyKey || !uuidPattern.test(idempotencyKey)) {
     return NextResponse.json({ error: 'A valid idempotency key is required.' }, { status: 400 });

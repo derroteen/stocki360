@@ -73,8 +73,8 @@ export default function SupplierModal({
 
       onSaveSuccess();
       onClose();
-    } catch (err: any) {
-      setError(err?.message ?? 'An error occurred. Please try again.');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred. Please try again.');
     } finally {
       setIsSubmitting(false);
     }

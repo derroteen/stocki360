@@ -467,8 +467,8 @@ export default function NewSaleModal({
 
       onSuccess();
       onClose();
-    } catch (err: any) {
-      setError(err?.message ?? 'An error occurred while saving the sale.');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred while saving the sale.');
     } finally {
       setIsSubmitting(false);
     }

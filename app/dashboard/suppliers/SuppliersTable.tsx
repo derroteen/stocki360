@@ -87,8 +87,8 @@ export default function SuppliersTable({ suppliers, stats = {} }: SuppliersTable
 
       setConfirmTarget(null);
       router.refresh();
-    } catch (error: any) {
-      setActionError(error?.message ?? `Unable to ${label} supplier.`);
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : `Unable to ${label} supplier.`);
     } finally {
       setIsActionSubmitting(false);
     }

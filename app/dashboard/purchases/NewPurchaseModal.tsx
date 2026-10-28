@@ -258,8 +258,8 @@ export default function NewPurchaseModal({
 
       onSuccess();
       onClose();
-    } catch (err: any) {
-      setError(err?.message ?? 'An error occurred while saving the purchase.');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred while saving the purchase.');
     } finally {
       setIsSubmitting(false);
     }
