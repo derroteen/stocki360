@@ -3,6 +3,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 import Typewriter from "@/components/landing/Typewriter";
 import LiveOverviewCard from "@/components/landing/LiveOverviewCard";
 import ProductWalkthrough from "@/components/landing/ProductWalkthrough";
+import Warehouse3DLoader from "@/components/landing/Warehouse3DLoader";
 
 export default function Home() {
   const features = [
@@ -109,6 +110,7 @@ export default function Home() {
         </section>
 
         <ProductWalkthrough />
+        <Warehouse3DLoader />
 
         <section className="border-b border-line bg-surface py-14 sm:py-16">
           <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
