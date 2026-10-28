@@ -4,6 +4,7 @@ import Typewriter from "@/components/landing/Typewriter";
 import LiveOverviewCard from "@/components/landing/LiveOverviewCard";
 import ProductWalkthrough from "@/components/landing/ProductWalkthrough";
 import Warehouse3DLoader from "@/components/landing/Warehouse3DLoader";
+import { BRAND_COMPANY_NAME, BRAND_CONTACT_EMAIL } from "@/lib/brand";
 
 export default function Home() {
   const features = [
@@ -189,6 +190,21 @@ export default function Home() {
               Sign In
             </Link>
           </div>
+        </div>
+        <div className="mx-auto mt-6 w-full max-w-6xl border-t border-line px-4 pt-4 sm:px-6" />
+        <div className="mx-auto flex w-full max-w-6xl flex-col items-center gap-2 px-4 text-center text-xs text-ink-500 sm:flex-row sm:justify-between sm:px-6 sm:text-left">
+          <p>
+            Powered by {BRAND_COMPANY_NAME}{" "}
+            <a
+              href={`mailto:${BRAND_CONTACT_EMAIL}`}
+              className="underline decoration-transparent underline-offset-2 transition-colors hover:text-accent-600 hover:decoration-current focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-card"
+            >
+              {BRAND_CONTACT_EMAIL}
+            </a>
+          </p>
+          <p>
+            © {new Date().getFullYear()} {BRAND_COMPANY_NAME}. All rights reserved.
+          </p>
         </div>
       </footer>
     </div>

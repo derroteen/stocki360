@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import PwaRuntime from "./PwaRuntime";
+import { BRAND_COMPANY_NAME } from "@/lib/brand";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -16,6 +17,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Stocki360",
   description: "Inventory and Stock Management System",
+  authors: [{ name: BRAND_COMPANY_NAME }],
+  creator: BRAND_COMPANY_NAME,
+  publisher: BRAND_COMPANY_NAME,
   applicationName: "Stocki360",
   manifest: "/manifest.webmanifest",
   appleWebApp: {

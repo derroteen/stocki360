@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import ThemeToggle from '@/components/ThemeToggle';
+import { BRAND_COMPANY_NAME } from '@/lib/brand';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -298,6 +299,9 @@ export default function LoginPage() {
               </p>
             )}
           </div>
+          <p className="pt-2 text-center text-xs text-ink-500">
+            Powered by {BRAND_COMPANY_NAME}
+          </p>
         </div>
       </div>
     </main>
