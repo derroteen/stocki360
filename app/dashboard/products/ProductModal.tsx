@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ProductStockLevel, Category, Supplier, ProductBarcode } from '@/lib/supabase/types';
 
@@ -33,73 +33,70 @@ export default function ProductModal({
   categories = [],
   suppliers = [],
 }: ProductModalProps) {
+  if (!isOpen) return null;
+
+  return (
+    <ProductModalForm
+      key={product?.id ?? 'new'}
+      onClose={onClose}
+      product={product}
+      barcodes={barcodes}
+      onSaveSuccess={onSaveSuccess}
+      categories={categories}
+      suppliers={suppliers}
+    />
+  );
+}
+
+function ProductModalForm({
+  onClose,
+  product = null,
+  barcodes,
+  onSaveSuccess,
+  categories = [],
+  suppliers = [],
+}: Omit<ProductModalProps, 'isOpen'>) {
   const router = useRouter();
-  const [sku, setSku] = useState('');
-  const [barcodeRows, setBarcodeRows] = useState<BarcodeFormRow[]>([]);
-  const [name, setName] = useState('');
-  const [costPrice, setCostPrice] = useState('');
-  const [sellPrice, setSellPrice] = useState('');
-  const [reorderLevel, setReorderLevel] = useState('');
-  const [categoryId, setCategoryId] = useState('');
-  const [supplierId, setSupplierId] = useState('');
-  const [stockUnit, setStockUnit] = useState('unit');
-  const [packageUnit, setPackageUnit] = useState('');
-  const [unitsPerPackage, setUnitsPerPackage] = useState('');
-  const [packageCostPrice, setPackageCostPrice] = useState('');
-  const [packageSellPrice, setPackageSellPrice] = useState('');
+  const [sku, setSku] = useState(product?.sku || '');
+  const [barcodeRows, setBarcodeRows] = useState<BarcodeFormRow[]>(
+    product
+      ? barcodes.map((barcode) => ({
+          id: barcode.id,
+          barcode: barcode.barcode,
+          entryMode: barcode.entry_mode,
+          label: barcode.label || '',
+        }))
+      : [],
+  );
+  const [name, setName] = useState(product?.name || '');
+  const [costPrice, setCostPrice] = useState(
+    product?.cost_price != null ? String(product.cost_price) : '',
+  );
+  const [sellPrice, setSellPrice] = useState(
+    product?.sell_price != null ? String(product.sell_price) : '',
+  );
+  const [reorderLevel, setReorderLevel] = useState(
+    product?.reorder_level != null ? String(product.reorder_level) : '',
+  );
+  const [categoryId, setCategoryId] = useState(product?.category_id || '');
+  const [supplierId, setSupplierId] = useState(product?.supplier_id || '');
+  const [stockUnit, setStockUnit] = useState(product?.stock_unit || 'unit');
+  const [packageUnit, setPackageUnit] = useState(product?.package_unit || '');
+  const [unitsPerPackage, setUnitsPerPackage] = useState(
+    product?.units_per_package != null ? String(product.units_per_package) : '',
+  );
+  const [packageCostPrice, setPackageCostPrice] = useState(
+    product?.package_cost_price != null ? String(product.package_cost_price) : '',
+  );
+  const [packageSellPrice, setPackageSellPrice] = useState(
+    product?.package_sell_price != null ? String(product.package_sell_price) : '',
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const isEdit = Boolean(product);
   const hasPackaging = Boolean(packageUnit && unitsPerPackage && Number(unitsPerPackage) > 0);
   const unitLabel = stockUnit.trim() || 'unit';
-
-  useEffect(() => {
-    if (product) {
-      setSku(product.sku || '');
-      setName(product.name || '');
-      setCostPrice(product.cost_price != null ? String(product.cost_price) : '');
-      setSellPrice(product.sell_price != null ? String(product.sell_price) : '');
-      setReorderLevel(product.reorder_level != null ? String(product.reorder_level) : '');
-      setCategoryId(product.category_id || '');
-      setSupplierId(product.supplier_id || '');
-      setStockUnit(product.stock_unit || 'unit');
-      setPackageUnit(product.package_unit || '');
-      setUnitsPerPackage(product.units_per_package != null ? String(product.units_per_package) : '');
-      setPackageCostPrice(product.package_cost_price != null ? String(product.package_cost_price) : '');
-      setPackageSellPrice(product.package_sell_price != null ? String(product.package_sell_price) : '');
-      setBarcodeRows(
-        barcodes.map((b) => ({
-          id: b.id,
-          barcode: b.barcode,
-          entryMode: b.entry_mode,
-          label: b.label || '',
-        }))
-      );
-    } else {
-      setSku('');
-      setName('');
-      setCostPrice('');
-      setSellPrice('');
-      setReorderLevel('');
-      setCategoryId('');
-      setSupplierId('');
-      setStockUnit('unit');
-      setPackageUnit('');
-      setUnitsPerPackage('');
-      setPackageCostPrice('');
-      setPackageSellPrice('');
-      setBarcodeRows([]);
-    }
-    setError(null);
-    // Only reset when the product being edited changes or the modal opens —
-    // `barcodes` is snapshotted here deliberately, not tracked live, since
-    // the parent recomputes it on every render and it would otherwise wipe
-    // in-progress edits.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [product, isOpen]);
-
-  if (!isOpen) return null;
 
   const handleAddBarcodeRow = () => {
     setBarcodeRows((prev) => [...prev, emptyBarcodeRow()]);
