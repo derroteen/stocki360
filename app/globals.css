@@ -356,3 +356,196 @@ body {
     transition: none !important;
   }
 }
+
+.live-command-frame {
+  isolation: isolate;
+  overflow-x: clip;
+  background: color-mix(in srgb, var(--color-accent-bright) 40%, transparent);
+}
+
+.live-command-frame::before {
+  position: absolute;
+  z-index: -1;
+  content: "";
+  inset: 0;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    color-mix(in srgb, var(--color-accent-bright) 52%, transparent) 70deg,
+    transparent 155deg,
+    color-mix(in srgb, var(--color-accent-bright) 30%, transparent) 245deg,
+    transparent 360deg
+  );
+  animation: live-command-glow-spin 24s linear infinite;
+}
+
+.live-command-panel {
+  isolation: isolate;
+}
+
+.live-command-panel::before {
+  position: absolute;
+  z-index: -1;
+  pointer-events: none;
+  content: "";
+  inset: 0;
+  opacity: 0.3;
+  background-image:
+    linear-gradient(to right, color-mix(in srgb, var(--color-line) 55%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--color-line) 55%, transparent) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: linear-gradient(to bottom, black, transparent 70%);
+}
+
+.live-command-panel[data-playing="false"] *,
+.live-command-panel[data-playing="false"] *::before,
+.live-command-panel[data-playing="false"] *::after {
+  animation-play-state: paused !important;
+}
+
+.live-event-enter {
+  animation: live-event-in 280ms ease-out both;
+}
+
+.live-status-dot {
+  animation: live-status-pulse 1.8s ease-in-out infinite;
+}
+
+.live-command-caret {
+  display: inline-block;
+  height: 1em;
+  margin-left: 2px;
+  border-right: 1.5px solid var(--color-accent-bright);
+  vertical-align: -0.15em;
+  animation: landing-caret-blink 1s steps(2, start) infinite;
+}
+
+.live-odometer-window {
+  display: inline-block;
+  height: 1em;
+  overflow: hidden;
+  vertical-align: bottom;
+}
+
+.live-odometer-column {
+  display: block;
+  transition: transform 650ms cubic-bezier(0.2, 0.75, 0.25, 1);
+}
+
+.live-chart-area,
+.live-chart-line {
+  transition: d 900ms cubic-bezier(0.2, 0.75, 0.25, 1);
+}
+
+.live-chart-head {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: live-chart-pulse 1.5s ease-in-out infinite;
+}
+
+.live-stock-fill {
+  transform-origin: left center;
+  transition: transform 750ms cubic-bezier(0.2, 0.75, 0.25, 1), opacity 250ms ease;
+}
+
+.live-stock-track--low .live-stock-fill {
+  animation: live-low-pulse 1.2s ease-in-out infinite;
+}
+
+.live-ticker-track {
+  display: flex;
+  width: max-content;
+}
+
+.live-ticker-wrap {
+  overflow: clip;
+}
+
+.live-ticker-track--moving {
+  animation: live-ticker-scroll 46s linear infinite;
+}
+
+.live-scan-sweep {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+  background: var(--color-accent-bright);
+  box-shadow: 0 0 8px 2px var(--color-accent-bright);
+  animation: live-scan-sweep 700ms ease-in-out infinite alternate;
+}
+
+@keyframes live-command-glow-spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+@keyframes live-event-in {
+  from {
+    opacity: 0;
+    transform: translateY(7px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes live-status-pulse {
+  50% {
+    opacity: 0.45;
+    transform: scale(0.82);
+  }
+}
+
+@keyframes live-chart-pulse {
+  50% {
+    opacity: 0.55;
+    transform: scale(1.7);
+  }
+}
+
+@keyframes live-low-pulse {
+  50% {
+    opacity: 0.58;
+  }
+}
+
+@keyframes live-ticker-scroll {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes live-scan-sweep {
+  from {
+    transform: translateY(-13px);
+    opacity: 0.55;
+  }
+  to {
+    transform: translateY(13px);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .live-command-frame::before,
+  .live-status-dot,
+  .live-command-caret,
+  .live-event-enter,
+  .live-chart-head,
+  .live-stock-track--low .live-stock-fill,
+  .live-ticker-track--moving,
+  .live-scan-sweep {
+    animation: none;
+  }
+
+  .live-odometer-column,
+  .live-chart-area,
+  .live-chart-line,
+  .live-stock-fill {
+    transition: none;
+  }
+}
