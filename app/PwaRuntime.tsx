@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -18,11 +18,66 @@ function isIos(): boolean {
   return /iphone|ipad|ipod/i.test(window.navigator.userAgent);
 }
 
+let wasInstalled = false;
+
+function getStandaloneMediaQuery() {
+  return window.matchMedia('(display-mode: standalone)');
+}
+
+function subscribeToInstalled(onStoreChange: () => void) {
+  const mediaQuery = getStandaloneMediaQuery();
+  const handleAppInstalled = () => {
+    wasInstalled = true;
+    onStoreChange();
+  };
+
+  mediaQuery.addEventListener('change', onStoreChange);
+  window.addEventListener('appinstalled', handleAppInstalled);
+
+  return () => {
+    mediaQuery.removeEventListener('change', onStoreChange);
+    window.removeEventListener('appinstalled', handleAppInstalled);
+  };
+}
+
+function getIsInstalled(): boolean {
+  return wasInstalled || isStandalone();
+}
+
+function subscribeToOfflineStatus(onStoreChange: () => void) {
+  window.addEventListener('online', onStoreChange);
+  window.addEventListener('offline', onStoreChange);
+
+  return () => {
+    window.removeEventListener('online', onStoreChange);
+    window.removeEventListener('offline', onStoreChange);
+  };
+}
+
+function getIsOffline(): boolean {
+  return !navigator.onLine;
+}
+
+function subscribeToIosHelp(onStoreChange: () => void) {
+  const mediaQuery = getStandaloneMediaQuery();
+  mediaQuery.addEventListener('change', onStoreChange);
+  window.addEventListener('appinstalled', onStoreChange);
+
+  return () => {
+    mediaQuery.removeEventListener('change', onStoreChange);
+    window.removeEventListener('appinstalled', onStoreChange);
+  };
+}
+
+function getShowIosHelp(): boolean {
+  return isIos() && !isStandalone();
+}
+
 export default function PwaRuntime() {
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-  const [isInstalled, setIsInstalled] = useState(false);
-  const [isOffline, setIsOffline] = useState(false);
-  const [showIosHelp, setShowIosHelp] = useState(false);
+  const isInstalled = useSyncExternalStore(subscribeToInstalled, getIsInstalled, () => false);
+  const isOffline = useSyncExternalStore(subscribeToOfflineStatus, getIsOffline, () => false);
+  const showIosHelp = useSyncExternalStore(subscribeToIosHelp, getShowIosHelp, () => false);
 
   useEffect(() => {
     // The worker is network-only because Stocki360 must never cache private inventory data.
@@ -32,31 +87,20 @@ export default function PwaRuntime() {
       });
     }
 
-    setIsInstalled(isStandalone());
-    setIsOffline(!navigator.onLine);
-    setShowIosHelp(isIos() && !isStandalone());
-
     const handleBeforeInstallPrompt = (event: Event) => {
       event.preventDefault();
       setInstallPrompt(event as BeforeInstallPromptEvent);
     };
     const handleAppInstalled = () => {
       setInstallPrompt(null);
-      setIsInstalled(true);
     };
-    const handleOnline = () => setIsOffline(false);
-    const handleOffline = () => setIsOffline(true);
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     window.addEventListener('appinstalled', handleAppInstalled);
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('appinstalled', handleAppInstalled);
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
     };
   }, []);
 
