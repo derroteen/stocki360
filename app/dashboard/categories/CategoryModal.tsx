@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Category } from '@/lib/supabase/types';
 
 interface CategoryModalProps {
@@ -16,23 +16,30 @@ export default function CategoryModal({
   category,
   onSaveSuccess,
 }: CategoryModalProps) {
+  if (!isOpen) return null;
+
+  return (
+    <CategoryModalForm
+      key={category?.id ?? 'new'}
+      onClose={onClose}
+      category={category}
+      onSaveSuccess={onSaveSuccess}
+    />
+  );
+}
+
+function CategoryModalForm({
+  onClose,
+  category,
+  onSaveSuccess,
+}: Omit<CategoryModalProps, 'isOpen'>) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
+  const [name, setName] = useState(category?.name ?? '');
+  const [description, setDescription] = useState(category?.description ?? '');
 
   const isEditing = !!category;
-
-  useEffect(() => {
-    if (isOpen) {
-      setError(null);
-      setName(category?.name ?? '');
-      setDescription(category?.description ?? '');
-    }
-  }, [isOpen, category]);
-
-  if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
