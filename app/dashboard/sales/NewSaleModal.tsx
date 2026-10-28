@@ -39,13 +39,32 @@ export default function NewSaleModal({
   barcodes,
   onSuccess,
 }: NewSaleModalProps) {
+  if (!isOpen) return null;
+
+  return (
+    <NewSaleForm
+      key="new"
+      onClose={onClose}
+      products={products}
+      barcodes={barcodes}
+      onSuccess={onSuccess}
+    />
+  );
+}
+
+function NewSaleForm({
+  onClose,
+  products,
+  barcodes,
+  onSuccess,
+}: Omit<NewSaleModalProps, 'isOpen'>) {
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [referenceNumber, setReferenceNumber] = useState('');
-  const [saleDate, setSaleDate] = useState('');
+  const [saleDate, setSaleDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [paymentMethod, setPaymentMethod] = useState('Cash');
   const [notes, setNotes] = useState('');
-  const [idempotencyKey, setIdempotencyKey] = useState('');
+  const [idempotencyKey] = useState(() => crypto.randomUUID());
 
   const [items, setItems] = useState<FormItem[]>([emptyItem()]);
 
@@ -58,32 +77,15 @@ export default function NewSaleModal({
   const barcodeInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
-    if (isOpen) {
-      setError(null);
-      setCustomerName('');
-      setCustomerPhone('');
-      setReferenceNumber('');
-      setSaleDate(new Date().toISOString().split('T')[0]);
-      setPaymentMethod('Cash');
-      setNotes('');
-      setIdempotencyKey(crypto.randomUUID());
-      setItems([emptyItem()]);
-      setBarcodeInput('');
-      setBarcodeMessage(null);
-      setShowCameraScanner(false);
-
-      // Only autofocus on devices with a precise pointer (i.e. a mouse/USB
-      // scanner) — on touch devices this pops the on-screen keyboard and
-      // buries half the form the moment the modal opens.
-      const isFinePointer =
-        typeof window !== 'undefined' && window.matchMedia('(pointer: fine)').matches;
-      if (isFinePointer) {
-        barcodeInputRef.current?.focus();
-      }
+    // Only autofocus on devices with a precise pointer (i.e. a mouse/USB
+    // scanner) — on touch devices this pops the on-screen keyboard and
+    // buries half the form the moment the modal opens.
+    const isFinePointer =
+      typeof window !== 'undefined' && window.matchMedia('(pointer: fine)').matches;
+    if (isFinePointer) {
+      barcodeInputRef.current?.focus();
     }
-  }, [isOpen]);
-
-  if (!isOpen) return null;
+  }, []);
 
   const getProduct = (productId: string) => products.find((p) => p.id === productId) || null;
 
