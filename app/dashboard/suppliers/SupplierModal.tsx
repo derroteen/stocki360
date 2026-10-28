@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Supplier } from '@/lib/supabase/types';
 
 interface SupplierModalProps {
@@ -16,31 +16,34 @@ export default function SupplierModal({
   supplier,
   onSaveSuccess,
 }: SupplierModalProps) {
+  if (!isOpen) return null;
+
+  return (
+    <SupplierModalForm
+      key={supplier?.id ?? 'new'}
+      onClose={onClose}
+      supplier={supplier}
+      onSaveSuccess={onSaveSuccess}
+    />
+  );
+}
+
+function SupplierModalForm({
+  onClose,
+  supplier,
+  onSaveSuccess,
+}: Omit<SupplierModalProps, 'isOpen'>) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [name, setName] = useState('');
-  const [contactPerson, setContactPerson] = useState('');
-  const [phone, setPhone] = useState('');
-  const [email, setEmail] = useState('');
-  const [address, setAddress] = useState('');
-  const [notes, setNotes] = useState('');
+  const [name, setName] = useState(supplier?.name ?? '');
+  const [contactPerson, setContactPerson] = useState(supplier?.contact_person ?? '');
+  const [phone, setPhone] = useState(supplier?.phone ?? '');
+  const [email, setEmail] = useState(supplier?.email ?? '');
+  const [address, setAddress] = useState(supplier?.address ?? '');
+  const [notes, setNotes] = useState(supplier?.notes ?? '');
 
   const isEditing = !!supplier;
-
-  useEffect(() => {
-    if (isOpen) {
-      setError(null);
-      setName(supplier?.name ?? '');
-      setContactPerson(supplier?.contact_person ?? '');
-      setPhone(supplier?.phone ?? '');
-      setEmail(supplier?.email ?? '');
-      setAddress(supplier?.address ?? '');
-      setNotes(supplier?.notes ?? '');
-    }
-  }, [isOpen, supplier]);
-
-  if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
