@@ -2,6 +2,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 import Typewriter from "@/components/landing/Typewriter";
 import LiveOverviewCard from "@/components/landing/LiveOverviewCard";
 import ProductWalkthrough from "@/components/landing/ProductWalkthrough";
+import TourVideo from "@/components/landing/TourVideo";
 import { BRAND_COMPANY_NAME, BRAND_CONTACT_EMAIL } from "@/lib/brand";
 import LiveCommandCenter from "@/components/landing/LiveCommandCenter";
 import AuthAwareActions from "@/components/landing/AuthAwareActions";
@@ -89,6 +90,16 @@ export default function Home() {
             </div>
 
             <LiveOverviewCard />
+          </div>
+        </section>
+
+        <section className="border-b border-line bg-surface py-14 sm:py-16">
+          <div className="mx-auto w-full max-w-6xl space-y-8 px-4 sm:px-6">
+            <div className="mx-auto max-w-2xl space-y-2 text-center">
+              <h2 className="font-serif text-3xl font-bold text-ink-900">See Stocki360 in 30 seconds</h2>
+              <p className="text-sm leading-6 text-ink-600 sm:text-base">From the first sale to the reorder alert.</p>
+            </div>
+            <TourVideo />
           </div>
         </section>
 

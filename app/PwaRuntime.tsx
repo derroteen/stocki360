@@ -80,7 +80,7 @@ export default function PwaRuntime() {
   const showIosHelp = useSyncExternalStore(subscribeToIosHelp, getShowIosHelp, () => false);
 
   useEffect(() => {
-    // The worker is network-only because Stocki360 must never cache private inventory data.
+    // Keep private data network-only and let the browser handle video and Range requests directly.
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js').catch(() => {
         // Installation remains optional if a browser or deployment blocks service workers.
