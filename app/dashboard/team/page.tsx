@@ -1,6 +1,10 @@
 import { redirect } from 'next/navigation';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
-import { getActiveBusinessResolution, BusinessRole } from '@/lib/supabase/business-context';
+import {
+  getActiveBusinessResolution,
+  BusinessRole,
+  TEAM_MANAGE_ROLES,
+} from '@/lib/supabase/business-context';
 import InviteModal from './InviteModal';
 import RevokeButton from './RevokeButton';
 
@@ -70,7 +74,7 @@ export default async function TeamPage() {
   }
 
   const activeBusinessId = resolution.context.businessId;
-  const canManageTeam = resolution.context.role === 'owner' || resolution.context.role === 'admin';
+  const canManageTeam = TEAM_MANAGE_ROLES.includes(resolution.context.role);
 
   const [{ data: membersData }, { data: invitationsData }] = await Promise.all([
     supabase

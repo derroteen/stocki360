@@ -125,3 +125,5 @@ export const SALE_WRITE_ROLES: BusinessRole[] = ['owner', 'admin', 'storekeeper'
 export function canWriteSales(role: BusinessRole): boolean {
   return SALE_WRITE_ROLES.includes(role);
 }
+
+export const TEAM_MANAGE_ROLES: BusinessRole[] = ['owner', 'admin'];

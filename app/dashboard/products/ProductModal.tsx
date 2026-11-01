@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { ProductStockLevel, Category, Supplier, ProductBarcode } from '@/lib/supabase/types';
 
 interface ProductModalProps {
@@ -329,6 +330,17 @@ function ProductModalForm({
                   </option>
                 ))}
               </select>
+              {categories.length === 0 && (
+                <p className="mt-1 text-xs text-ink-500">
+                  Categories are optional.{' '}
+                  <Link
+                    href="/dashboard/categories"
+                    className="inline-flex min-h-[44px] items-center font-semibold text-accent-text underline underline-offset-2"
+                  >
+                    Create a category
+                  </Link>
+                </p>
+              )}
             </div>
             
             <div>
@@ -347,6 +359,17 @@ function ProductModalForm({
                   </option>
                 ))}
               </select>
+              {suppliers.length === 0 && (
+                <p className="mt-1 text-xs text-ink-500">
+                  Suppliers are optional.{' '}
+                  <Link
+                    href="/dashboard/suppliers"
+                    className="inline-flex min-h-[44px] items-center font-semibold text-accent-text underline underline-offset-2"
+                  >
+                    Add a supplier
+                  </Link>
+                </p>
+              )}
             </div>
           </div>
 

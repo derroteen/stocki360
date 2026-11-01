@@ -14,6 +14,12 @@ interface DashboardNavProps {
   canSwitch: boolean;
 }
 
+interface DashboardNavLink {
+  href: string;
+  label: string;
+  active: boolean;
+}
+
 const roleLabels: Record<BusinessRole, string> = {
   owner: 'Owner',
   admin: 'Admin',
@@ -57,6 +63,56 @@ export default function DashboardNav({ businessName, role, canSwitch }: Dashboar
   const isSuppliersActive = pathname.startsWith('/dashboard/suppliers');
   const isSalesActive = pathname.startsWith('/dashboard/sales');
   const isTeamActive = pathname.startsWith('/dashboard/team');
+  const isGuideActive = pathname.startsWith('/dashboard/guide');
+
+  const navigationGroups = [
+    {
+      label: 'Set up',
+      links: [
+        { href: '/dashboard/categories', label: 'Categories', active: isCategoriesActive },
+        { href: '/dashboard/suppliers', label: 'Suppliers', active: isSuppliersActive },
+        { href: '/dashboard/products', label: 'Products', active: isProductsActive },
+      ],
+    },
+    {
+      label: 'Daily work',
+      links: [
+        { href: '/dashboard/purchases', label: 'Purchases', active: isPurchasesActive },
+        { href: '/dashboard/sales', label: 'Sales', active: isSalesActive },
+      ],
+    },
+    {
+      label: 'Manage',
+      links: [
+        { href: '/dashboard/team', label: 'Team', active: isTeamActive },
+        { href: '/dashboard/guide', label: 'Guide', active: isGuideActive },
+      ],
+    },
+  ];
+
+  const dashboardLink: DashboardNavLink = {
+    href: '/dashboard',
+    label: 'Dashboard',
+    active: isDashboardActive,
+  };
+
+  const renderNavigationLink = (item: DashboardNavLink, mobile = false) => (
+    <Link
+      key={item.href}
+      href={item.href}
+      onClick={mobile ? () => setIsMobileMenuOpen(false) : undefined}
+      aria-current={item.active ? 'page' : undefined}
+      className={`inline-flex min-h-[44px] items-center rounded-lg font-medium transition-colors ${
+        mobile ? 'w-full px-4 text-sm' : 'px-2 text-[11px] xl:px-2.5 xl:text-xs'
+      } ${
+        item.active
+          ? 'bg-accent-50 text-accent-text font-semibold'
+          : 'text-ink-600 hover:bg-subtle hover:text-ink-900'
+      }`}
+    >
+      {item.label}
+    </Link>
+  );
 
   useEffect(() => {
     let isMounted = true;
@@ -141,87 +197,30 @@ export default function DashboardNav({ businessName, role, canSwitch }: Dashboar
           )}
         </Link>
 
-        {/* Desktop Navigation Pills */}
-        <nav className="hidden md:flex items-center p-1 bg-subtle-strong/80 rounded-full border border-line/80 text-xs sm:text-sm font-medium">
-          <Link
-            href="/dashboard"
-            className={`px-3 sm:px-4 py-1.5 rounded-full transition-colors ${
-              isDashboardActive
-                ? 'bg-accent-50 text-accent-text font-semibold border border-accent-100 shadow-2xs'
-                : 'text-ink-500 hover:text-ink-900'
-            }`}
-          >
-            Dashboard
-          </Link>
-          <Link
-            href="/dashboard/products"
-            className={`px-3 sm:px-4 py-1.5 rounded-full transition-colors ${
-              isProductsActive
-                ? 'bg-accent-50 text-accent-text font-semibold border border-accent-100 shadow-2xs'
-                : 'text-ink-500 hover:text-ink-900'
-            }`}
-          >
-            Products
-          </Link>
-          <Link
-            href="/dashboard/team"
-            className={`px-3 sm:px-4 py-1.5 rounded-full transition-colors ${
-              isTeamActive
-                ? 'bg-accent-50 text-accent-text font-semibold border border-accent-100 shadow-2xs'
-                : 'text-ink-500 hover:text-ink-900'
-            }`}
-          >
-            Team
-          </Link>
-          <Link
-            href="/dashboard/purchases"
-            className={`px-3 sm:px-4 py-1.5 rounded-full transition-colors ${
-              isPurchasesActive
-                ? 'bg-accent-50 text-accent-text font-semibold border border-accent-100 shadow-2xs'
-                : 'text-ink-500 hover:text-ink-900'
-            }`}
-          >
-            Purchases
-          </Link>
-          <Link
-            href="/dashboard/sales"
-            className={`px-3 sm:px-4 py-1.5 rounded-full transition-colors ${
-              isSalesActive
-                ? 'bg-accent-50 text-accent-text font-semibold border border-accent-100 shadow-2xs'
-                : 'text-ink-500 hover:text-ink-900'
-            }`}
-          >
-            Sales
-          </Link>
-          <Link
-            href="/dashboard/categories"
-            className={`px-3 sm:px-4 py-1.5 rounded-full transition-colors ${
-              isCategoriesActive
-                ? 'bg-accent-50 text-accent-text font-semibold border border-accent-100 shadow-2xs'
-                : 'text-ink-500 hover:text-ink-900'
-            }`}
-          >
-            Categories
-          </Link>
-          <Link
-            href="/dashboard/suppliers"
-            className={`px-3 sm:px-4 py-1.5 rounded-full transition-colors ${
-              isSuppliersActive
-                ? 'bg-accent-50 text-accent-text font-semibold border border-accent-100 shadow-2xs'
-                : 'text-ink-500 hover:text-ink-900'
-            }`}
-          >
-            Suppliers
-          </Link>
+        <nav
+          aria-label="Dashboard navigation"
+          className="hidden min-w-0 items-center gap-1 rounded-xl border border-line bg-subtle-strong/80 p-1 lg:flex"
+        >
+          {renderNavigationLink(dashboardLink)}
+          {navigationGroups.map((group) => (
+            <div
+              key={group.label}
+              role="group"
+              aria-label={group.label}
+              className="flex items-center gap-0.5 border-l border-line-strong pl-1"
+            >
+              {group.links.map((item) => renderNavigationLink(item))}
+            </div>
+          ))}
         </nav>
 
         {/* Desktop User controls */}
-        <div className="hidden md:flex items-center gap-2">
+        <div className="hidden shrink-0 items-center gap-2 lg:flex">
           <ThemeToggle />
           <Link
             href="/"
             aria-label="Back to home page"
-            className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-lg border border-line-strong px-3 text-xs sm:text-sm font-medium text-ink-700 transition-colors hover:bg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-card"
+            className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-lg border border-line-strong px-2.5 text-xs font-medium text-ink-700 transition-colors hover:bg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-card"
           >
             <svg aria-hidden="true" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
               <path strokeLinecap="round" strokeLinejoin="round" d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1V10Z" />
@@ -232,7 +231,7 @@ export default function DashboardNav({ businessName, role, canSwitch }: Dashboar
             type="button"
             onClick={handleLogout}
             disabled={isLoggingOut}
-            className="min-h-[36px] px-3 rounded-lg border border-line-strong text-xs sm:text-sm font-medium text-ink-700 hover:bg-subtle disabled:cursor-not-allowed disabled:opacity-60"
+            className="min-h-[44px] px-2.5 rounded-lg border border-line-strong text-xs font-medium text-ink-700 hover:bg-subtle disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isLoggingOut ? 'Logging out...' : 'Log out'}
           </button>
@@ -245,7 +244,7 @@ export default function DashboardNav({ businessName, role, canSwitch }: Dashboar
         <button
           type="button"
           onClick={() => setIsMobileMenuOpen(true)}
-          className="md:hidden -mr-2 inline-flex min-h-[44px] min-w-[44px] items-center justify-center text-ink-600 transition-colors hover:text-ink-900"
+          className="lg:hidden -mr-2 inline-flex min-h-[44px] min-w-[44px] items-center justify-center text-ink-600 transition-colors hover:text-ink-900"
           aria-label="Open menu"
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -276,7 +275,7 @@ export default function DashboardNav({ businessName, role, canSwitch }: Dashboar
 
       {/* Mobile Menu Overlay */}
       {isMobileMenuOpen && (
-        <div className="md:hidden fixed inset-0 z-50 bg-card flex flex-col">
+        <div className="lg:hidden fixed inset-0 z-50 bg-card flex flex-col">
           <div className="px-4 py-3 flex items-center justify-between border-b border-line">
             <div className="min-w-0">
               <span className="text-lg font-bold font-serif text-accent-link tracking-tight">
@@ -293,7 +292,7 @@ export default function DashboardNav({ businessName, role, canSwitch }: Dashboar
               <button
                 type="button"
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="min-h-10 min-w-10 p-2 text-ink-600 hover:text-ink-900 transition-colors"
+                className="min-h-[44px] min-w-[44px] p-2 text-ink-600 hover:text-ink-900 transition-colors"
                 aria-label="Close menu"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -304,89 +303,23 @@ export default function DashboardNav({ businessName, role, canSwitch }: Dashboar
           </div>
 
           <div className="flex-1 overflow-y-auto px-4 py-6 space-y-6">
-            <nav className="flex flex-col gap-2">
-              <Link
-                href="/dashboard"
-                onClick={() => setIsMobileMenuOpen(false)}
-                className={`px-4 py-3 rounded-xl font-medium transition-colors ${
-                  isDashboardActive
-                    ? 'bg-accent-50 text-accent-text'
-                    : 'text-ink-600 active:bg-subtle'
-                }`}
-              >
-                Dashboard
-              </Link>
-              <Link
-                href="/dashboard/products"
-                onClick={() => setIsMobileMenuOpen(false)}
-                className={`px-4 py-3 rounded-xl font-medium transition-colors ${
-                  isProductsActive
-                    ? 'bg-accent-50 text-accent-text'
-                    : 'text-ink-600 active:bg-subtle'
-                }`}
-              >
-                Products
-              </Link>
-              <Link
-                href="/dashboard/team"
-                onClick={() => setIsMobileMenuOpen(false)}
-                className={`px-4 py-3 rounded-xl font-medium transition-colors ${
-                  isTeamActive
-                    ? 'bg-accent-50 text-accent-text'
-                    : 'text-ink-600 active:bg-subtle'
-                }`}
-              >
-                Team
-              </Link>
-              <Link
-                href="/dashboard/purchases"
-                onClick={() => setIsMobileMenuOpen(false)}
-                className={`px-4 py-3 rounded-xl font-medium transition-colors ${
-                  isPurchasesActive
-                    ? 'bg-accent-50 text-accent-text'
-                    : 'text-ink-600 active:bg-subtle'
-                }`}
-              >
-                Purchases
-              </Link>
-              <Link
-                href="/dashboard/sales"
-                onClick={() => setIsMobileMenuOpen(false)}
-                className={`px-4 py-3 rounded-xl font-medium transition-colors ${
-                  isSalesActive
-                    ? 'bg-accent-50 text-accent-text'
-                    : 'text-ink-600 active:bg-subtle'
-                }`}
-              >
-                Sales
-              </Link>
-              <Link
-                href="/dashboard/categories"
-                onClick={() => setIsMobileMenuOpen(false)}
-                className={`px-4 py-3 rounded-xl font-medium transition-colors ${
-                  isCategoriesActive
-                    ? 'bg-accent-50 text-accent-text'
-                    : 'text-ink-600 active:bg-subtle'
-                }`}
-              >
-                Categories
-              </Link>
-              <Link
-                href="/dashboard/suppliers"
-                onClick={() => setIsMobileMenuOpen(false)}
-                className={`px-4 py-3 rounded-xl font-medium transition-colors ${
-                  isSuppliersActive
-                    ? 'bg-accent-50 text-accent-text'
-                    : 'text-ink-600 active:bg-subtle'
-                }`}
-              >
-                Suppliers
-              </Link>
+            <nav aria-label="Dashboard navigation" className="flex flex-col gap-5">
+              {renderNavigationLink(dashboardLink, true)}
+              {navigationGroups.map((group) => (
+                <section key={group.label} className="border-t border-line pt-3">
+                  <h2 className="px-4 pb-1 text-xs font-semibold uppercase tracking-wider text-ink-500">
+                    {group.label}
+                  </h2>
+                  <div className="flex flex-col gap-1">
+                    {group.links.map((item) => renderNavigationLink(item, true))}
+                  </div>
+                </section>
+              ))}
               <Link
                 href="/"
                 aria-label="Back to home page"
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="flex min-h-10 items-center gap-2 rounded-xl px-4 py-3 font-medium text-ink-600 transition-colors hover:bg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-card"
+                className="flex min-h-[44px] items-center gap-2 rounded-xl px-4 py-3 font-medium text-ink-600 transition-colors hover:bg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-card"
               >
                 <svg aria-hidden="true" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                   <path strokeLinecap="round" strokeLinejoin="round" d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1V10Z" />
@@ -411,7 +344,7 @@ export default function DashboardNav({ businessName, role, canSwitch }: Dashboar
                   handleLogout();
                 }}
                 disabled={isLoggingOut}
-                className="w-full text-left px-4 py-3 rounded-xl font-medium text-warn-700 active:bg-warn-50 transition-colors"
+                className="min-h-[44px] w-full text-left px-4 py-3 rounded-xl font-medium text-warn-700 active:bg-warn-50 transition-colors"
               >
                 {isLoggingOut ? 'Logging out...' : 'Log out'}
               </button>

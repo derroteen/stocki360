@@ -111,6 +111,13 @@ export async function POST(request: NextRequest) {
   const idempotencyKey = toNonEmptyTrimmedString(body.idempotencyKey);
   const rawItems: PurchaseItemInput[] = Array.isArray(body.items) ? body.items : [];
 
+  if (rawItems.length === 0) {
+    return NextResponse.json(
+      { error: 'At least one product is required for a purchase.' },
+      { status: 400 }
+    );
+  }
+
   if (!idempotencyKey || !uuidPattern.test(idempotencyKey)) {
     return NextResponse.json({ error: 'A valid idempotency key is required.' }, { status: 400 });
   }

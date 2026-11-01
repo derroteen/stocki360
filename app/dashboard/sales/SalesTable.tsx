@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Sale, ProductStockLevel, ProductBarcode } from '@/lib/supabase/types';
 import NewSaleModal from './NewSaleModal';
@@ -154,27 +155,38 @@ export default function SalesTable({ sales, activeProducts, barcodes, businessNa
       )}
 
       {filteredSales.length === 0 ? (
-        <div className="bg-panel border border-line rounded-xl p-12 text-center space-y-4 shadow-2xs">
-          <div className="w-12 h-12 rounded-full bg-accent-50 text-accent-bright border border-accent-100 flex items-center justify-center mx-auto text-xl font-serif font-bold">
-            💰
+        <div className="flex flex-col gap-5 rounded-xl border border-line bg-panel p-5 shadow-2xs sm:flex-row sm:items-center sm:justify-between sm:p-6">
+          <div className="flex min-w-0 items-start gap-4">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-accent-100 bg-accent-50 font-serif text-xl font-bold text-accent-bright">
+              S
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-lg font-semibold text-ink-900 font-serif">
+                {paymentFilter === 'all' ? 'No sales recorded yet' : 'No sales found for this payment method'}
+              </h3>
+              <p className="max-w-xl text-sm text-ink-500">
+                This page records sales and updates your inventory and revenue records.
+              </p>
+            </div>
           </div>
-          <div className="space-y-1">
-            <h3 className="text-lg font-semibold text-ink-900 font-serif">
-              {paymentFilter === 'all' ? 'No sales recorded yet' : 'No sales found for this payment method'}
-            </h3>
-            <p className="text-sm text-ink-500 max-w-sm mx-auto">
-              {paymentFilter === 'all'
-                ? 'Record a sale to a customer to update your inventory and revenue records.'
-                : 'Try selecting a different payment method or recording a new sale.'}
-            </p>
+          <div className="flex shrink-0 justify-end">
+            {activeProducts.some((product) => (product.current_stock ?? 0) > 0) ? (
+              <button
+                type="button"
+                onClick={() => setIsNewModalOpen(true)}
+                className="min-h-[44px] px-5 py-2.5 inline-flex items-center justify-center gap-2 bg-accent-500 hover:bg-accent-600 text-white rounded-lg font-medium shadow-sm transition-colors text-sm cursor-pointer"
+              >
+                <span className="text-lg leading-none">+</span> Record Sale
+              </button>
+            ) : (
+              <Link
+                href={activeProducts.length === 0 ? '/dashboard/products' : '/dashboard/purchases'}
+                className="inline-flex min-h-[44px] items-center justify-center rounded-lg bg-accent-600 px-5 text-sm font-semibold text-white hover:bg-accent-700"
+              >
+                {activeProducts.length === 0 ? 'Add a product' : 'Add stock'}
+              </Link>
+            )}
           </div>
-          <button
-            type="button"
-            onClick={() => setIsNewModalOpen(true)}
-            className="min-h-[44px] px-5 py-2.5 inline-flex items-center justify-center gap-2 bg-accent-500 hover:bg-accent-600 text-white rounded-lg font-medium shadow-sm transition-colors text-sm cursor-pointer"
-          >
-            <span className="text-lg leading-none">+</span> Record Sale
-          </button>
         </div>
       ) : (
         <>

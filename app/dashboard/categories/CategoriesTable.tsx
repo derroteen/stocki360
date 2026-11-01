@@ -153,21 +153,24 @@ export default function CategoriesTable({ categories }: CategoriesTableProps) {
 
       {/* Empty state */}
       {visibleCategories.length === 0 ? (
-        <div className="bg-panel border border-line rounded-xl p-12 text-center space-y-4">
-          <div className="w-12 h-12 rounded-full bg-accent-50 text-accent-bright border border-accent-100 flex items-center justify-center mx-auto text-xl font-serif font-bold">
-            C
+        <div className="flex flex-col gap-5 rounded-xl border border-line bg-panel p-5 shadow-2xs sm:flex-row sm:items-center sm:justify-between sm:p-6">
+          <div className="flex min-w-0 items-start gap-4">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-accent-100 bg-accent-50 font-serif text-xl font-bold text-accent-bright">
+              C
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-lg font-semibold text-ink-900 font-serif">
+                {view === 'active' ? 'No active categories' : 'No archived categories'}
+              </h3>
+              <p className="max-w-xl text-sm text-ink-500">
+                {view === 'active'
+                  ? 'Categories group related products so your inventory is easier to organize.'
+                  : 'This page organizes related products into categories; restore archived categories to use them again.'}
+              </p>
+            </div>
           </div>
-          <div className="space-y-1">
-            <h3 className="text-lg font-semibold text-ink-900 font-serif">
-              {view === 'active' ? 'No active categories' : 'No archived categories'}
-            </h3>
-            <p className="text-sm text-ink-500 max-w-sm mx-auto">
-              {view === 'active'
-                ? "You haven't added any categories yet. Create categories to better organize your inventory."
-                : 'Archived categories will appear here. You can restore them at any time.'}
-            </p>
-          </div>
-          {view === 'active' && (
+          <div className="flex shrink-0 justify-end">
+            {view === 'active' ? (
             <button
               type="button"
               onClick={handleAddCategory}
@@ -175,7 +178,16 @@ export default function CategoriesTable({ categories }: CategoriesTableProps) {
             >
               <span className="text-lg leading-none">+</span> Add category
             </button>
-          )}
+            ) : (
+              <button
+                type="button"
+                onClick={() => setView('active')}
+                className="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-line-strong bg-card px-5 text-sm font-semibold text-ink-700 hover:bg-subtle-strong"
+              >
+                View active categories
+              </button>
+            )}
+          </div>
         </div>
       ) : (
         <>

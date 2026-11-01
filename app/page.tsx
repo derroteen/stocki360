@@ -5,6 +5,7 @@ import ProductWalkthrough from "@/components/landing/ProductWalkthrough";
 import { BRAND_COMPANY_NAME, BRAND_CONTACT_EMAIL } from "@/lib/brand";
 import LiveCommandCenter from "@/components/landing/LiveCommandCenter";
 import AuthAwareActions from "@/components/landing/AuthAwareActions";
+import { GUIDE_STEPS } from "@/lib/guide-steps";
 
 export default function Home() {
   const features = [
@@ -43,19 +44,18 @@ export default function Home() {
     "Jua Kali businesses",
   ];
 
-  const steps = [
-    "Add your products",
-    "Record purchases and sales",
-    "Monitor your stock",
-    "Reorder before you run out",
-  ];
-
   return (
     <div className="min-h-screen bg-surface text-ink-900">
       <header className="sticky top-0 z-40 border-b border-line bg-card/95 backdrop-blur">
         <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4 sm:px-6">
           <span className="font-serif text-xl font-bold tracking-tight text-accent-link">Stocki360</span>
           <div className="flex items-center gap-2">
+            <a
+              href="#how-it-works"
+              className="hidden min-h-[44px] items-center rounded-lg px-3 text-sm font-medium text-ink-700 transition-colors hover:bg-subtle hover:text-ink-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-card lg:inline-flex"
+            >
+              How it works
+            </a>
             <ThemeToggle />
             <AuthAwareActions variant="header" />
           </div>
@@ -133,20 +133,59 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="border-b border-line bg-surface py-14 sm:py-16">
+        <section id="how-it-works" className="scroll-mt-20 border-b border-line bg-surface py-14 sm:py-16">
           <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
-            <div className="mb-8 space-y-2">
-              <h2 className="font-serif text-3xl font-bold text-ink-900">How it works</h2>
-              <p className="text-sm leading-6 text-ink-600 sm:text-base">Set up your workflow in four clear steps.</p>
+            <div className="mb-8 max-w-3xl space-y-2">
+              <h2 className="font-serif text-3xl font-bold text-ink-900">Get started in minutes</h2>
+              <p className="text-sm leading-6 text-ink-600 sm:text-base">
+                Follow these eight steps to set up your business and start managing stock.
+              </p>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {steps.map((step, index) => (
-                <div key={step} className="rounded-xl border border-line bg-card p-5 shadow-2xs">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-accent-text">Step {index + 1}</p>
-                  <p className="mt-2 text-sm font-medium text-ink-800">{step}</p>
-                </div>
+            <ol className="relative space-y-4">
+              <span aria-hidden="true" className="absolute bottom-5 left-[17px] top-5 w-px bg-line" />
+              {GUIDE_STEPS.map((step, index) => (
+                <li
+                  key={step.id}
+                  className="landing-guide-step relative grid min-w-0 grid-cols-[2.25rem_minmax(0,1fr)] items-stretch gap-3 sm:gap-4"
+                >
+                  <span className="z-10 inline-flex h-9 w-9 items-center justify-center self-start rounded-full border border-line-strong bg-card text-sm font-bold text-ink-700">
+                    {index + 1}
+                  </span>
+                  <article className="min-w-0 rounded-xl border border-line bg-card p-4 shadow-2xs sm:p-5">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="break-words text-base font-semibold text-ink-900 sm:text-lg">
+                        {step.title}
+                      </h3>
+                      {step.optional && (
+                        <span className="rounded-full border border-line px-2 py-0.5 text-xs font-medium text-ink-500">
+                          Optional
+                        </span>
+                      )}
+                    </div>
+                    <p className="mt-1 break-words text-sm leading-6 text-ink-600">
+                      {step.whyItMatters}
+                    </p>
+                  </article>
+                </li>
               ))}
+            </ol>
+
+            <aside className="mt-6 rounded-xl border border-line bg-card p-4 sm:p-5">
+              <h3 className="font-semibold text-ink-900">Why this order?</h3>
+              <p className="mt-1 text-sm leading-6 text-ink-600">
+                Products can use categories and suppliers, but neither is required. You can’t sell an item until it has stock, so add stock before recording your first sale.
+              </p>
+            </aside>
+
+            <div className="mt-8 rounded-xl border border-line bg-card p-5 shadow-2xs sm:flex sm:items-center sm:justify-between sm:gap-6 sm:p-6">
+              <div className="min-w-0">
+                <h3 className="font-serif text-xl font-bold text-ink-900">Ready to get started?</h3>
+                <p className="mt-1 text-sm text-ink-600">Set up your business and keep your stock moving.</p>
+              </div>
+              <div className="mt-4 sm:mt-0">
+                <AuthAwareActions variant="hero" />
+              </div>
             </div>
           </div>
         </section>

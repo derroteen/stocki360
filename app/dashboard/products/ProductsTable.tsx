@@ -183,33 +183,41 @@ export default function ProductsTable({ active, archived, allCategories, allSupp
 
       {/* Empty State */}
       {products.length === 0 ? (
-        <div className="bg-panel border border-line rounded-xl p-12 text-center space-y-4">
-          <div className="w-12 h-12 rounded-full bg-accent-50 text-accent-bright border border-accent-100 flex items-center justify-center mx-auto text-xl font-serif font-bold">
-            P
+        <div className="flex flex-col gap-5 rounded-xl border border-line bg-panel p-5 shadow-2xs sm:flex-row sm:items-center sm:justify-between sm:p-6">
+          <div className="flex min-w-0 items-start gap-4">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-accent-100 bg-accent-50 font-serif text-xl font-bold text-accent-bright">
+              P
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-lg font-semibold text-ink-900 font-serif">
+                {view === 'active' ? 'No products found' : 'No archived products'}
+              </h3>
+              <p className="max-w-xl text-sm text-ink-500">
+                {view === 'active'
+                  ? 'Products hold item details, prices, and stock levels for your inventory.'
+                  : 'This page manages product details and inventory; restore archived products to use them again.'}
+              </p>
+            </div>
           </div>
-          <div className="space-y-1">
-            <h3 className="text-lg font-semibold text-ink-900 font-serif">
-              {view === 'active' ? 'No products found' : 'No archived products'}
-            </h3>
+          <div className="flex shrink-0 justify-end">
             {view === 'active' ? (
-              <p className="text-sm text-ink-500 max-w-sm mx-auto">
-                Your inventory is empty. Start adding products to track stock levels and prices.
-              </p>
+              <button
+                type="button"
+                onClick={handleAddProduct}
+                className="min-h-[44px] px-5 py-2.5 inline-flex items-center justify-center gap-2 bg-accent-500 hover:bg-accent-600 text-white rounded-lg font-medium shadow-sm transition-colors text-sm"
+              >
+                <span className="text-lg leading-none">+</span> Add product
+              </button>
             ) : (
-              <p className="text-sm text-ink-500 max-w-sm mx-auto">
-                Archived products will appear here and can be restored when needed.
-              </p>
+              <button
+                type="button"
+                onClick={() => setView('active')}
+                className="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-line-strong bg-card px-5 text-sm font-semibold text-ink-700 hover:bg-subtle-strong"
+              >
+                View active products
+              </button>
             )}
           </div>
-          {view === 'active' ? (
-            <button
-              type="button"
-              onClick={handleAddProduct}
-              className="min-h-[44px] px-5 py-2.5 inline-flex items-center justify-center gap-2 bg-accent-500 hover:bg-accent-600 text-white rounded-lg font-medium shadow-sm transition-colors text-sm"
-            >
-              <span className="text-lg leading-none">+</span> Add product
-            </button>
-          ) : null}
         </div>
       ) : (
         <>

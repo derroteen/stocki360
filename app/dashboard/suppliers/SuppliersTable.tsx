@@ -156,21 +156,24 @@ export default function SuppliersTable({ suppliers, stats = {} }: SuppliersTable
 
       {/* Empty state */}
       {visibleSuppliers.length === 0 ? (
-        <div className="bg-panel border border-line rounded-xl p-12 text-center space-y-4">
-          <div className="w-12 h-12 rounded-full bg-accent-50 text-accent-bright border border-accent-100 flex items-center justify-center mx-auto text-xl font-serif font-bold">
-            S
+        <div className="flex flex-col gap-5 rounded-xl border border-line bg-panel p-5 shadow-2xs sm:flex-row sm:items-center sm:justify-between sm:p-6">
+          <div className="flex min-w-0 items-start gap-4">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-accent-100 bg-accent-50 font-serif text-xl font-bold text-accent-bright">
+              S
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-lg font-semibold text-ink-900 font-serif">
+                {view === 'active' ? 'No active suppliers' : 'No archived suppliers'}
+              </h3>
+              <p className="max-w-xl text-sm text-ink-500">
+                {view === 'active'
+                  ? 'Suppliers keep track of where you source your products.'
+                  : 'This page tracks product suppliers; restore archived suppliers to use them again.'}
+              </p>
+            </div>
           </div>
-          <div className="space-y-1">
-            <h3 className="text-lg font-semibold text-ink-900 font-serif">
-              {view === 'active' ? 'No active suppliers' : 'No archived suppliers'}
-            </h3>
-            <p className="text-sm text-ink-500 max-w-sm mx-auto">
-              {view === 'active'
-                ? 'Keep track of where you source your products by adding suppliers.'
-                : 'Archived suppliers will appear here. You can restore them at any time.'}
-            </p>
-          </div>
-          {view === 'active' && (
+          <div className="flex shrink-0 justify-end">
+            {view === 'active' ? (
             <button
               type="button"
               onClick={handleAddSupplier}
@@ -178,7 +181,16 @@ export default function SuppliersTable({ suppliers, stats = {} }: SuppliersTable
             >
               <span className="text-lg leading-none">+</span> Add supplier
             </button>
-          )}
+            ) : (
+              <button
+                type="button"
+                onClick={() => setView('active')}
+                className="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-line-strong bg-card px-5 text-sm font-semibold text-ink-700 hover:bg-subtle-strong"
+              >
+                View active suppliers
+              </button>
+            )}
+          </div>
         </div>
       ) : (
         <>

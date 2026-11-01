@@ -5,9 +5,95 @@ import { ProductStockLevel } from '@/lib/supabase/types';
 import OverviewChart from './OverviewChart';
 import { getActiveBusinessResolution } from '@/lib/supabase/business-context';
 import { getStockStatus, prioritizeLowStockProducts } from '@/lib/stock-alerts';
+import SetupChecklist from './SetupChecklist';
+import type { SetupProgress } from './SetupChecklist';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Dashboard' };
+
+async function getSetupProgress(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  businessId: string
+): Promise<SetupProgress> {
+  const [
+    categoriesResult,
+    suppliersResult,
+    productsResult,
+    purchasesResult,
+    stockMovementsResult,
+    salesResult,
+    reorderLevelsResult,
+    membersResult,
+  ] = await Promise.all([
+    supabase
+      .from('categories')
+      .select('id', { count: 'exact', head: true })
+      .eq('business_id', businessId)
+      .eq('is_active', true),
+    supabase
+      .from('suppliers')
+      .select('id', { count: 'exact', head: true })
+      .eq('business_id', businessId)
+      .eq('is_active', true),
+    supabase
+      .from('products')
+      .select('id', { count: 'exact', head: true })
+      .eq('business_id', businessId)
+      .eq('is_active', true),
+    supabase
+      .from('purchases')
+      .select('id', { count: 'exact', head: true })
+      .eq('business_id', businessId),
+    supabase
+      .from('stock_movements')
+      .select('id,products!inner(business_id)', { count: 'exact', head: true })
+      .eq('products.business_id', businessId)
+      .in('movement_type', ['in', 'adjustment']),
+    supabase
+      .from('sales')
+      .select('id', { count: 'exact', head: true })
+      .eq('business_id', businessId),
+    supabase
+      .from('products')
+      .select('id', { count: 'exact', head: true })
+      .eq('business_id', businessId)
+      .eq('is_active', true)
+      .gt('reorder_level', 0),
+    supabase
+      .from('business_memberships')
+      .select('id', { count: 'exact', head: true })
+      .eq('business_id', businessId)
+      .eq('is_active', true),
+  ]);
+
+  const results = [
+    ['categories', categoriesResult],
+    ['suppliers', suppliersResult],
+    ['products', productsResult],
+    ['purchases', purchasesResult],
+    ['stock movements', stockMovementsResult],
+    ['sales', salesResult],
+    ['reorder levels', reorderLevelsResult],
+    ['business members', membersResult],
+  ] as const;
+
+  for (const [label, result] of results) {
+    if (result.error) {
+      throw new Error(`Unable to load setup progress for ${label}: ${result.error.message}`);
+    }
+  }
+
+  return {
+    categories: categoriesResult.count ?? 0,
+    suppliers: suppliersResult.count ?? 0,
+    products: productsResult.count ?? 0,
+    purchases: purchasesResult.count ?? 0,
+    stockMovements: stockMovementsResult.count ?? 0,
+    sales: salesResult.count ?? 0,
+    productsWithReorderLevel: reorderLevelsResult.count ?? 0,
+    activeMembers: membersResult.count ?? 0,
+  };
+}
 
 export default async function DashboardOverviewPage() {
   const supabase = await createSupabaseServerClient();
@@ -35,6 +121,7 @@ export default async function DashboardOverviewPage() {
   }
 
   const activeBusinessId = resolution.context.businessId;
+  const setupProgress = await getSetupProgress(supabase, activeBusinessId);
 
   let products: ProductStockLevel[] = [];
 
@@ -98,6 +185,12 @@ export default async function DashboardOverviewPage() {
           Snapshot of your business stock levels, valuation, and alerts.
         </p>
       </div>
+
+      <SetupChecklist
+        businessId={activeBusinessId}
+        role={resolution.context.role}
+        progress={setupProgress}
+      />
 
       {/* Stat Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">

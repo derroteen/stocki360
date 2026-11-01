@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
 import {
   ProductStockLevel,
   ProductBarcode,
@@ -45,6 +46,54 @@ export default function NewSaleModal({
   onSuccess,
 }: NewSaleModalProps) {
   if (!isOpen) return null;
+
+  if (!products.some((product) => (product.current_stock ?? 0) > 0)) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink-900/50 p-4 backdrop-blur-xs">
+        <section
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="sale-no-stock-title"
+          className="w-full max-w-md rounded-xl border border-line bg-panel p-5 shadow-xl sm:p-6"
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h2 id="sale-no-stock-title" className="text-lg font-bold font-serif text-ink-900">
+                No stock available
+              </h2>
+              <p className="mt-2 text-sm text-ink-600">
+                Nothing in stock to sell yet. Record a purchase or a stock adjustment first.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close sale dialog"
+              className="inline-flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-lg text-ink-500 hover:bg-subtle-strong hover:text-ink-900"
+            >
+              ✕
+            </button>
+          </div>
+          <div className="mt-4 grid gap-2 sm:grid-cols-2">
+            <Link
+              href="/dashboard/purchases"
+              onClick={onClose}
+              className="inline-flex min-h-[44px] items-center justify-center rounded-lg bg-accent-600 px-4 text-sm font-semibold text-white hover:bg-accent-700"
+            >
+              Record a purchase
+            </Link>
+            <Link
+              href="/dashboard/products"
+              onClick={onClose}
+              className="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-line-strong bg-card px-4 text-sm font-semibold text-ink-700 hover:bg-subtle-strong"
+            >
+              Stock adjustment
+            </Link>
+          </div>
+        </section>
+      </div>
+    );
+  }
 
   return (
     <NewSaleForm

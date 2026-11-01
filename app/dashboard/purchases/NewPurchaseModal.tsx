@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { Supplier, ProductStockLevel, CreatePurchaseItemPayload } from '@/lib/supabase/types';
 
 interface NewPurchaseModalProps {
@@ -37,6 +38,45 @@ export default function NewPurchaseModal({
   onSuccess,
 }: NewPurchaseModalProps) {
   if (!isOpen) return null;
+
+  if (products.length === 0) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink-900/50 p-4 backdrop-blur-xs">
+        <section
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="purchase-no-products-title"
+          className="w-full max-w-md rounded-xl border border-line bg-panel p-5 shadow-xl sm:p-6"
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h2 id="purchase-no-products-title" className="text-lg font-bold font-serif text-ink-900">
+                Add a product first
+              </h2>
+              <p className="mt-2 text-sm text-ink-600">
+                Purchases add stock to products, so create at least one product before recording a purchase.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close purchase dialog"
+              className="inline-flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-lg text-ink-500 hover:bg-subtle-strong hover:text-ink-900"
+            >
+              ✕
+            </button>
+          </div>
+          <Link
+            href="/dashboard/products"
+            onClick={onClose}
+            className="mt-4 inline-flex min-h-[44px] w-full items-center justify-center rounded-lg bg-accent-600 px-4 text-sm font-semibold text-white hover:bg-accent-700"
+          >
+            Go to Products
+          </Link>
+        </section>
+      </div>
+    );
+  }
 
   return (
     <NewPurchaseForm
