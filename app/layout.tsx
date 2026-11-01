@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import PwaRuntime from "./PwaRuntime";
 import { BRAND_COMPANY_NAME } from "@/lib/brand";
 import "./globals.css";
+import { Analytics } from "@vercel/analytics/next";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
