@@ -34,7 +34,7 @@ export default async function SalesPage() {
   const activeBusinessId = resolution.context.businessId;
   const businessName =
     resolution.memberships.find((membership) => membership.business_id === activeBusinessId)
-      ?.businesses?.name ?? 'Business';
+      ?.businesses?.name ?? null;
 
   let sales: Sale[] = [];
   let activeProducts: ProductStockLevel[] = [];

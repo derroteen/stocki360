@@ -1,1 +1,1 @@
-export const RECEIPT_THANK_YOU_MESSAGE = 'Thank you for your business!';
+export const RECEIPT_FOOTER_NOTE = 'Thank you for your business!';

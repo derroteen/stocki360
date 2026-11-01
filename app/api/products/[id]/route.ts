@@ -291,7 +291,7 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
         );
       }
       return NextResponse.json(
-        { error: 'A product with this SKU already exists in this business.', code: error.code },
+        { error: 'That product code is already used. Try a different one or tap Suggest a code.', code: 'PRODUCT_SKU_CONFLICT' },
         { status: 409 }
       );
     }

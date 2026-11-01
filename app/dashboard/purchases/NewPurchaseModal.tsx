@@ -428,7 +428,7 @@ function NewPurchaseForm({
                           <option value="">Select product...</option>
                           {products.map((p) => (
                             <option key={p.id} value={p.id}>
-                              {p.name} ({p.sku})
+                              {p.name} (Code (SKU): {p.sku})
                             </option>
                           ))}
                         </select>

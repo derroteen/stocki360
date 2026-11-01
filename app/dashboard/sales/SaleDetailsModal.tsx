@@ -128,7 +128,7 @@ export default function SaleDetailsModal({ isOpen, onClose, onReceipt, sale }: S
                         </div>
                         {item.product?.sku && (
                           <div className="break-all font-mono text-xs text-ink-500">
-                            {item.product.sku}
+                            Code (SKU): {item.product.sku}
                           </div>
                         )}
                         {item.entry_mode === 'package' && item.package_quantity && item.package_unit_snapshot && (
@@ -184,7 +184,7 @@ export default function SaleDetailsModal({ isOpen, onClose, onReceipt, sale }: S
                           {item.product?.name || 'Product'}
                         </div>
                         {item.product?.sku && (
-                          <div className="font-mono text-xs text-ink-500">{item.product.sku}</div>
+                          <div className="font-mono text-xs text-ink-500">Code (SKU): {item.product.sku}</div>
                         )}
                         {item.entry_mode === 'package' && item.package_quantity && item.package_unit_snapshot && (
                           <div className="text-xs text-ink-500 mt-0.5">

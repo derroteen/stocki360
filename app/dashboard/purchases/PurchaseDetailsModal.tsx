@@ -131,7 +131,7 @@ export default function PurchaseDetailsModal({
                         </div>
                         {item.product?.sku && (
                           <div className="break-all font-mono text-xs text-ink-500">
-                            {item.product.sku}
+                            Code (SKU): {item.product.sku}
                           </div>
                         )}
                       </div>
@@ -182,7 +182,7 @@ export default function PurchaseDetailsModal({
                         </div>
                         {item.product?.sku && (
                           <div className="font-mono text-xs text-ink-500">
-                            {item.product.sku}
+                            Code (SKU): {item.product.sku}
                           </div>
                         )}
                       </td>

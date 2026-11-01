@@ -12,7 +12,7 @@ interface SalesTableProps {
   sales: Sale[];
   activeProducts: ProductStockLevel[];
   barcodes: ProductBarcode[];
-  businessName: string;
+  businessName: string | null;
 }
 
 export default function SalesTable({ sales, activeProducts, barcodes, businessName }: SalesTableProps) {

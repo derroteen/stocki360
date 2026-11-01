@@ -10,10 +10,12 @@ export interface BusinessMembership {
   business_id: string;
   role: BusinessRole;
   is_active: boolean;
-  businesses?: {
-    id: string;
-    name: string;
-  } | null;
+  businesses?: BusinessSummary | null;
+}
+
+interface BusinessSummary {
+  id: string;
+  name: string;
 }
 
 export interface ActiveBusinessContext {
@@ -52,19 +54,26 @@ export async function resolveActiveBusinessContext(
     throw error;
   }
 
-  const memberships = ((data ?? []) as Array<{
+  const rows = (data ?? []) as Array<{
     id: string;
     business_id: string;
     role: BusinessRole;
     is_active: boolean;
-    businesses?: Array<{ id: string; name: string }> | null;
-  }>).map((row) => ({
-    id: row.id,
-    business_id: row.business_id,
-    role: row.role,
-    is_active: row.is_active,
-    businesses: row.businesses?.[0] ?? null,
-  }));
+    businesses?: BusinessSummary | BusinessSummary[] | null;
+  }>;
+  const memberships: BusinessMembership[] = rows.map((row) => {
+    const business = Array.isArray(row.businesses)
+      ? row.businesses[0] ?? null
+      : row.businesses ?? null;
+
+    return {
+      id: row.id,
+      business_id: row.business_id,
+      role: row.role,
+      is_active: row.is_active,
+      businesses: business,
+    };
+  });
 
   if (memberships.length === 0) {
     return { context: null, memberships, needsSelection: false };

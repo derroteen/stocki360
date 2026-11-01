@@ -811,7 +811,7 @@ function NewSaleForm({
                           <option value="">Select product...</option>
                           {products.map((p) => (
                             <option key={p.id} value={p.id} disabled={(p.current_stock ?? 0) <= 0}>
-                              {p.name} ({p.sku}) — {p.current_stock ?? 0} {p.stock_unit || 'unit'}s in stock
+                              {p.name} (Code (SKU): {p.sku}) — {p.current_stock ?? 0} {p.stock_unit || 'unit'}s in stock
                             </option>
                           ))}
                         </select>

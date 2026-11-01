@@ -34,7 +34,7 @@ export default async function SelectBusinessPage() {
 
         <div className="space-y-3">
           {resolution.memberships.map((membership) => {
-            const businessName = membership.businesses?.name ?? 'Business';
+            const businessName = membership.businesses?.name ?? 'Unnamed business';
             return (
               <Link
                 key={membership.id}

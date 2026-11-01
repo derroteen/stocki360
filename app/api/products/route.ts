@@ -184,6 +184,32 @@ function extractDuplicateBarcodeValue(details: string | null | undefined): strin
   return match ? match[1] : null;
 }
 
+export async function GET(request: NextRequest) {
+  const skuPrefix = request.nextUrl.searchParams.get('sku-prefix');
+  if (!skuPrefix || !/^[A-Z0-9-]+$/i.test(skuPrefix)) {
+    return NextResponse.json({ error: 'A valid product-code prefix is required.' }, { status: 400 });
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const resolution = await resolveActiveBusinessContext(supabase);
+  if (!resolution.context) {
+    return NextResponse.json({ error: 'Active business context is required.' }, { status: 403 });
+  }
+
+  const { data, error } = await supabase
+    .from('products')
+    .select('sku')
+    .eq('business_id', resolution.context.businessId)
+    .ilike('sku', `${skuPrefix}%`);
+
+  if (error) {
+    console.error('Unable to check existing product codes:', error);
+    return NextResponse.json({ error: 'Unable to check existing product codes.' }, { status: 500 });
+  }
+
+  return NextResponse.json({ skus: (data ?? []).map(({ sku }) => sku) });
+}
+
 // Replaces this product's product_barcodes rows with the submitted list.
 // business_id is always taken from the server-resolved context, never the client.
 async function syncProductBarcodes(
@@ -287,7 +313,7 @@ export async function POST(request: NextRequest) {
         );
       }
       return NextResponse.json(
-        { error: 'A product with this SKU already exists in this business.', code: error.code },
+        { error: 'That product code is already used. Try a different one or tap Suggest a code.', code: 'PRODUCT_SKU_CONFLICT' },
         { status: 409 }
       );
     }

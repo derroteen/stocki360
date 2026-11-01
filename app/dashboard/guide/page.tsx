@@ -44,9 +44,9 @@ const stepDetails: Record<
     commonMistake: 'Thinking every purchase needs a supplier; direct purchases can have none.',
   },
   products: {
-    whatItIs: 'A product stores the name, SKU, prices, unit, and reorder level for an item.',
+    whatItIs: 'A product stores the name, product code (SKU), prices, unit, and reorder level for an item.',
     whatToDo: 'Add each item you intend to track or sell, and set its reorder level.',
-    example: 'Add “PVC Pipe 20mm” with its SKU, unit, prices, and a reorder level.',
+    example: 'Add “PVC Pipe 20mm” with its product code (SKU), unit, prices, and a reorder level.',
     commonMistake: 'Expecting a new product to have stock; new products start at zero.',
   },
   'add-stock': {

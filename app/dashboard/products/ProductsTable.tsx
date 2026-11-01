@@ -232,7 +232,7 @@ export default function ProductsTable({ active, archived, allCategories, allSupp
             <table className="w-full min-w-[1000px] text-left border-collapse text-sm">
               <thead>
                 <tr className="border-b border-line bg-panel text-ink-700 font-medium">
-                  <th className="py-3.5 px-4">SKU</th>
+                  <th className="py-3.5 px-4"><abbr title="Stock Keeping Unit: your own product code">Code (SKU)</abbr></th>
                   <th className="py-3.5 px-4">Name</th>
                   <th className="py-3.5 px-4">Category</th>
                   <th className="py-3.5 px-4">Supplier</th>
@@ -257,7 +257,7 @@ export default function ProductsTable({ active, archived, allCategories, allSupp
                     }
                   >
                     <td className="py-4 px-4 font-mono text-xs text-ink-700 font-medium">
-                      {product.sku}
+                      <span className="sr-only">Code (SKU): </span>{product.sku}
                       {productBarcodes.length > 0 && (
                         <div className="font-mono text-xs text-ink-500 mt-0.5">
                           {productBarcodes.length <= 2
@@ -376,7 +376,7 @@ export default function ProductsTable({ active, archived, allCategories, allSupp
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <span className="font-mono text-xs text-ink-500 block">
-                      {product.sku}
+                      <span className="font-mono text-xs text-ink-500">Code (SKU): {product.sku}</span>
                     </span>
                     {productBarcodes.length > 0 && (
                       <span className="font-mono text-xs text-ink-500 block">

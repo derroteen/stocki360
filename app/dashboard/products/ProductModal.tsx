@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ProductStockLevel, Category, Supplier, ProductBarcode } from '@/lib/supabase/types';
@@ -58,7 +58,10 @@ function ProductModalForm({
   suppliers = [],
 }: Omit<ProductModalProps, 'isOpen'>) {
   const router = useRouter();
+  const skuHelpRef = useRef<HTMLDivElement>(null);
+  const skuHelpButtonRef = useRef<HTMLButtonElement>(null);
   const [sku, setSku] = useState(product?.sku || '');
+  const [isSkuHelpOpen, setIsSkuHelpOpen] = useState(false);
   const [barcodeRows, setBarcodeRows] = useState<BarcodeFormRow[]>(
     product
       ? barcodes.map((barcode) => ({
@@ -93,11 +96,73 @@ function ProductModalForm({
     product?.package_sell_price != null ? String(product.package_sell_price) : '',
   );
   const [loading, setLoading] = useState(false);
+  const [suggestingSku, setSuggestingSku] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const isEdit = Boolean(product);
   const hasPackaging = Boolean(packageUnit && unitsPerPackage && Number(unitsPerPackage) > 0);
   const unitLabel = stockUnit.trim() || 'unit';
+
+  useEffect(() => {
+    if (!isSkuHelpOpen) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (event.target instanceof Node && !skuHelpRef.current?.contains(event.target)) {
+        setIsSkuHelpOpen(false);
+      }
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsSkuHelpOpen(false);
+        skuHelpButtonRef.current?.focus();
+      }
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isSkuHelpOpen]);
+
+  const handleSuggestSku = async () => {
+    if (sku.trim() && !window.confirm('Replace the current product code with a suggested code?')) {
+      return;
+    }
+
+    const words = name.match(/[a-z]+/gi) ?? [];
+    const codeParts = words.slice(0, 2).map((word) => word.slice(0, 3).toUpperCase());
+    const number = name.match(/\d+/)?.[0];
+    const baseCode = [...(codeParts.length > 0 ? codeParts : ['ITEM']), ...(number ? [number] : [])].join('-');
+
+    setSuggestingSku(true);
+    setError(null);
+    try {
+      const response = await fetch(`/api/products?sku-prefix=${encodeURIComponent(baseCode)}`);
+      const body = (await response.json().catch(() => null)) as { skus?: string[]; error?: string } | null;
+      if (!response.ok || !body || !Array.isArray(body.skus)) {
+        throw new Error(body?.error ?? 'Unable to check existing product codes. Please try again.');
+      }
+
+      const existingCodes = new Set(body.skus.map((existingCode) => existingCode.toUpperCase()));
+      let suggestedCode = baseCode;
+      let suffix = 2;
+      while (existingCodes.has(suggestedCode)) {
+        suggestedCode = `${baseCode}-${suffix}`;
+        suffix += 1;
+      }
+      setSku(suggestedCode);
+    } catch (suggestionError) {
+      setError(
+        suggestionError instanceof Error
+          ? suggestionError.message
+          : 'Unable to check existing product codes. Please try again.',
+      );
+    } finally {
+      setSuggestingSku(false);
+    }
+  };
 
   const handleAddBarcodeRow = () => {
     setBarcodeRows((prev) => [...prev, emptyBarcodeRow()]);
@@ -160,7 +225,10 @@ function ProductModalForm({
       });
 
       if (!response.ok) {
-        const body = (await response.json().catch(() => null)) as { error?: string } | null;
+        const body = (await response.json().catch(() => null)) as { error?: string; code?: string } | null;
+        if (body?.code === 'PRODUCT_SKU_CONFLICT') {
+          throw new Error('That product code is already used. Try a different one or tap Suggest a code.');
+        }
         throw new Error(body?.error ?? 'An error occurred while saving the product');
       } else {
         router.refresh();
@@ -225,17 +293,56 @@ function ProductModalForm({
           )}
 
           <div>
-            <label className="block text-sm font-medium text-ink-700 mb-1">
-              SKU
-            </label>
-            <input
-              type="text"
-              required
-              value={sku}
-              onChange={(e) => setSku(e.target.value)}
-              className="w-full px-3 py-2 border border-line rounded-lg bg-card text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
-              placeholder="e.g. PRD-001"
-            />
+            <div className="mb-1 flex items-center gap-2">
+              <label htmlFor="product-code" className="text-sm font-medium text-ink-700">
+                Product code (SKU)
+              </label>
+              <div className="relative" ref={skuHelpRef}>
+                <button
+                  ref={skuHelpButtonRef}
+                  type="button"
+                  aria-label="What does SKU mean?"
+                  aria-expanded={isSkuHelpOpen}
+                  aria-controls="product-code-help"
+                  aria-describedby={isSkuHelpOpen ? 'product-code-help' : undefined}
+                  onClick={() => setIsSkuHelpOpen((open) => !open)}
+                  className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full text-sm font-semibold text-ink-600 hover:bg-subtle focus:outline-none focus:ring-2 focus:ring-accent-500"
+                >
+                  ?
+                </button>
+                {isSkuHelpOpen && (
+                  <div
+                    id="product-code-help"
+                    role="tooltip"
+                    className="absolute left-0 top-full z-20 mt-1 w-[min(18rem,calc(100vw-4rem))] rounded-lg border border-line bg-card p-3 text-xs leading-5 text-ink-700 shadow-lg"
+                  >
+                    SKU means Stock Keeping Unit. It is your own shop code, used to find the product quickly in sales and reports. It is different from the barcode, which the manufacturer prints on the pack.
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <input
+                id="product-code"
+                type="text"
+                required
+                value={sku}
+                onChange={(e) => setSku(e.target.value)}
+                className="w-full min-w-0 flex-1 rounded-lg border border-line bg-card px-3 py-2 text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
+                placeholder="e.g. PRD-001"
+              />
+              <button
+                type="button"
+                onClick={handleSuggestSku}
+                disabled={suggestingSku || loading}
+                className="inline-flex min-h-[44px] shrink-0 items-center justify-center rounded-lg border border-line bg-card px-3 text-sm font-medium text-ink-700 hover:bg-subtle disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {suggestingSku ? 'Checking…' : 'Suggest a code'}
+              </button>
+            </div>
+            <p className="mt-1 text-xs leading-5 text-ink-500">
+              A short code you choose to identify this product, for example PVC-20 or RICE-5KG. Each product needs its own code.
+            </p>
           </div>
 
           <div>

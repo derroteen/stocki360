@@ -51,7 +51,7 @@ export default function StockLevels({
           <h3 className="text-sm font-semibold text-ink-800">Stock on hand</h3>
           <p className="mt-0.5 text-xs text-ink-500">Products updating live</p>
         </div>
-        <span className="rounded-full border border-line bg-subtle px-2.5 py-1 text-[10px] font-medium text-ink-500">6 SKUs</span>
+        <span className="rounded-full border border-line bg-subtle px-2.5 py-1 text-[10px] font-medium text-ink-500">6 product codes</span>
       </div>
       <ul className="space-y-4">
         {products.map((product) => {
