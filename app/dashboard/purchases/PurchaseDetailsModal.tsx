@@ -46,10 +46,10 @@ export default function PurchaseDetailsModal({
 
       <div className="relative bg-card rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh] border border-line animate-in fade-in zoom-in-95 duration-150">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-line-subtle bg-subtle/50">
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-lg font-bold text-ink-900 font-serif">
+        <div className="flex items-center justify-between gap-2 px-4 py-4 border-b border-line-subtle bg-subtle/50 sm:px-6">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-base font-bold text-ink-900 font-serif sm:text-lg">
                 Purchase Order Details
               </h2>
               <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-good-100 text-good-700 border border-good-600/30">
@@ -57,7 +57,9 @@ export default function PurchaseDetailsModal({
               </span>
             </div>
             <p className="text-xs text-ink-500 mt-0.5">
-              Ref: {purchase.reference_number || `#${purchase.id.slice(0, 8)}`} • Received {formatDate(purchase.purchase_date)}
+              <span className="break-words">
+                Ref: {purchase.reference_number || `#${purchase.id.slice(0, 8)}`} • Received {formatDate(purchase.purchase_date)}
+              </span>
             </p>
           </div>
           <button
@@ -71,7 +73,7 @@ export default function PurchaseDetailsModal({
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        <div className="min-w-0 flex-1 overflow-y-auto p-4 space-y-6 sm:p-6">
           {/* Supplier and Meta Info Card */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-xl bg-subtle border border-line text-sm">
             <div>
@@ -119,11 +121,54 @@ export default function PurchaseDetailsModal({
               Purchased Items ({items.length})
             </h3>
             <div className="overflow-hidden rounded-xl border border-line shadow-2xs">
-              <table className="w-full text-left border-collapse text-sm">
+              <div className="sm:hidden divide-y divide-line-subtle">
+                {items.map((item) => (
+                  <div key={item.id} className="space-y-2 p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="break-words font-medium text-ink-900">
+                          {item.product?.name || 'Product'}
+                        </div>
+                        {item.product?.sku && (
+                          <div className="break-all font-mono text-xs text-ink-500">
+                            {item.product.sku}
+                          </div>
+                        )}
+                      </div>
+                      <div className="shrink-0 text-right">
+                        <span className="block text-xs text-ink-500">Line Total</span>
+                        <span className="font-mono font-bold text-ink-900">
+                          {formatCurrency(item.line_total)}
+                        </span>
+                      </div>
+                    </div>
+                    <p className="text-xs text-ink-600">
+                      Qty received: <span className="font-mono font-semibold text-ink-900">{item.quantity}</span>
+                      {' × '}
+                      <span className="font-mono">{formatCurrency(item.unit_cost)}</span>
+                    </p>
+                  </div>
+                ))}
+                <div className="flex items-center justify-between gap-3 border-t-2 border-line bg-subtle/80 px-4 py-3.5">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-ink-600">
+                    Grand Total
+                  </span>
+                  <span className="shrink-0 text-right font-mono text-base font-bold text-ink-900">
+                    {formatCurrency(purchase.total_amount)}
+                  </span>
+                </div>
+              </div>
+              <div
+                className="hidden overflow-x-auto overscroll-x-contain sm:block"
+                tabIndex={0}
+                role="region"
+                aria-label="Purchase line items"
+              >
+              <table className="w-full min-w-[560px] text-left border-collapse text-sm">
                 <thead>
                   <tr className="border-b border-line bg-subtle text-ink-700 text-xs font-semibold">
                     <th className="py-3 px-4">Product</th>
-                    <th className="py-3 px-4 text-right">Quantity</th>
+                    <th className="py-3 px-4 text-right">Qty received</th>
                     <th className="py-3 px-4 text-right">Unit Cost</th>
                     <th className="py-3 px-4 text-right">Line Total</th>
                   </tr>
@@ -142,7 +187,7 @@ export default function PurchaseDetailsModal({
                         )}
                       </td>
                       <td className="py-3.5 px-4 text-right font-mono font-semibold">
-                        +{item.quantity}
+                        {item.quantity}
                       </td>
                       <td className="py-3.5 px-4 text-right font-mono text-ink-600">
                         {formatCurrency(item.unit_cost)}
@@ -164,12 +209,13 @@ export default function PurchaseDetailsModal({
                   </tr>
                 </tfoot>
               </table>
+              </div>
             </div>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-line-subtle bg-subtle flex items-center justify-end rounded-b-2xl">
+        <div className="px-4 py-4 border-t border-line-subtle bg-subtle flex items-center justify-end rounded-b-2xl sm:px-6">
           <button
             type="button"
             onClick={onClose}

@@ -164,8 +164,14 @@ export default function PurchasesTable({
       ) : (
         <>
           {/* Desktop Table (>= 640px) */}
-          <div className="hidden sm:block overflow-hidden bg-panel border border-line rounded-xl shadow-xs">
-            <table className="w-full text-left border-collapse text-sm">
+          <div className="hidden sm:block rounded-xl border border-line bg-panel shadow-xs">
+            <div
+              className="overflow-x-auto overscroll-x-contain rounded-xl"
+              tabIndex={0}
+              role="region"
+              aria-label="Purchases"
+            >
+            <table className="w-full min-w-[820px] text-left border-collapse text-sm">
               <thead>
                 <tr className="border-b border-line bg-panel text-ink-700 font-medium">
                   <th className="py-3.5 px-4">Date</th>
@@ -226,6 +232,7 @@ export default function PurchasesTable({
                 })}
               </tbody>
             </table>
+            </div>
           </div>
 
           {/* Mobile Stacked Card Layout (< 640px) */}
@@ -244,15 +251,15 @@ export default function PurchasesTable({
                   className="bg-panel border border-line rounded-xl p-4 min-h-[44px] space-y-3 cursor-pointer hover:border-accent-500/50 active:bg-subtle-strong transition-all"
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <div>
+                    <div className="min-w-0">
                       <span className="font-mono text-xs text-ink-500 block">
                         {formatDate(purchase.purchase_date)}
                       </span>
-                      <h4 className="font-semibold text-ink-900 text-base">
+                      <h4 className="break-words font-semibold text-ink-900 text-base">
                         {purchase.supplier?.name || 'Direct / None'}
                       </h4>
                       {purchase.reference_number && (
-                        <span className="text-xs font-mono text-ink-600 block mt-0.5">
+                        <span className="break-all text-xs font-mono text-ink-600 block mt-0.5">
                           Ref: {purchase.reference_number}
                         </span>
                       )}

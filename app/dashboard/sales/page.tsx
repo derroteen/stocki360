@@ -1,10 +1,11 @@
 import { redirect } from 'next/navigation';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { Sale, ProductStockLevel, ProductBarcode } from '@/lib/supabase/types';
-import { resolveActiveBusinessContext } from '@/lib/supabase/business-context';
+import { getActiveBusinessResolution } from '@/lib/supabase/business-context';
 import SalesTable from './SalesTable';
 
 export const dynamic = 'force-dynamic';
+export const metadata = { title: 'Sales' };
 
 export default async function SalesPage() {
   const supabase = await createSupabaseServerClient();
@@ -16,7 +17,7 @@ export default async function SalesPage() {
     redirect('/login');
   }
 
-  const resolution = await resolveActiveBusinessContext(supabase);
+  const resolution = await getActiveBusinessResolution();
 
   if (!resolution.context && resolution.memberships.length === 0) {
     redirect('/dashboard/select-business');
@@ -31,6 +32,9 @@ export default async function SalesPage() {
   }
 
   const activeBusinessId = resolution.context.businessId;
+  const businessName =
+    resolution.memberships.find((membership) => membership.business_id === activeBusinessId)
+      ?.businesses?.name ?? 'Business';
 
   let sales: Sale[] = [];
   let activeProducts: ProductStockLevel[] = [];
@@ -102,5 +106,12 @@ export default async function SalesPage() {
     // Graceful fallback
   }
 
-  return <SalesTable sales={sales} activeProducts={activeProducts} barcodes={barcodes} />;
+  return (
+    <SalesTable
+      sales={sales}
+      activeProducts={activeProducts}
+      barcodes={barcodes}
+      businessName={businessName}
+    />
+  );
 }

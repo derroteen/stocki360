@@ -81,8 +81,8 @@ export default function MovementHistoryModal({ product, onClose }: MovementHisto
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink-900/50 p-4 backdrop-blur-xs">
       <div className="w-full max-w-4xl overflow-hidden rounded-xl border border-line bg-card shadow-xl">
-        <div className="flex items-center justify-between border-b border-line px-5 py-4 sm:px-6">
-          <h2 className="text-xl font-bold font-serif text-ink-900">
+        <div className="flex items-center justify-between gap-2 border-b border-line px-4 py-4 sm:px-6">
+          <h2 className="min-w-0 break-words text-base font-bold font-serif text-ink-900 sm:text-xl">
             {product.name} — Movement History
           </h2>
           <button
@@ -112,8 +112,14 @@ export default function MovementHistoryModal({ product, onClose }: MovementHisto
 
           {!loading && !error && movements.length > 0 && (
             <>
-              <div className="hidden sm:block overflow-hidden rounded-lg border border-line">
-                <table className="w-full text-left text-sm">
+              <div className="hidden sm:block rounded-lg border border-line">
+                <div
+                  className="overflow-x-auto overscroll-x-contain rounded-lg"
+                  tabIndex={0}
+                  role="region"
+                  aria-label="Movement history"
+                >
+                <table className="w-full min-w-[760px] text-left text-sm">
                   <thead className="bg-subtle text-xs uppercase tracking-wider text-ink-500">
                     <tr>
                       <th className="px-4 py-3 font-semibold">Date</th>
@@ -139,6 +145,7 @@ export default function MovementHistoryModal({ product, onClose }: MovementHisto
                     ))}
                   </tbody>
                 </table>
+                </div>
               </div>
 
               <div className="space-y-3 sm:hidden">
@@ -162,7 +169,7 @@ export default function MovementHistoryModal({ product, onClose }: MovementHisto
                     </div>
                     <div>
                       <span className="block text-xs text-ink-500">Note</span>
-                      <span className="text-sm text-ink-700">{movement.note || '-'}</span>
+                      <span className="break-words text-sm text-ink-700">{movement.note || '-'}</span>
                     </div>
                   </div>
                 ))}

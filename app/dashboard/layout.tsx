@@ -1,14 +1,44 @@
 import { ReactNode } from 'react';
+import type { Metadata } from 'next';
 import DashboardNav from './DashboardNav';
 import InvitationBanner from './InvitationBanner';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { getActiveBusinessResolution } from '@/lib/supabase/business-context';
 import { BRAND_COMPANY_NAME, BRAND_CONTACT_EMAIL } from '@/lib/brand';
 
+export async function generateMetadata(): Promise<Metadata> {
+  const resolution = await getActiveBusinessResolution();
+  const activeMembership = resolution.context
+    ? resolution.memberships.find(
+        (membership) => membership.business_id === resolution.context?.businessId
+      )
+    : null;
+  const businessName = activeMembership?.businesses?.name;
+
+  return {
+    title: {
+      default: businessName ? `Dashboard · ${businessName}` : 'Dashboard',
+      template: businessName ? `%s · ${businessName}` : '%s',
+    },
+  };
+}
+
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
-  const supabase = await createSupabaseServerClient();
+  const [supabase, resolution] = await Promise.all([
+    createSupabaseServerClient(),
+    getActiveBusinessResolution(),
+  ]);
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  const activeMembership = resolution.context
+    ? resolution.memberships.find(
+        (membership) => membership.business_id === resolution.context?.businessId
+      )
+    : null;
+  const businessName = activeMembership?.businesses?.name ?? null;
+  const role = resolution.context?.role ?? null;
+  const canSwitch = resolution.memberships.length > 1;
 
   let invitation: { id: string; role: string; businessName: string } | null = null;
 
@@ -36,8 +66,8 @@ export default async function DashboardLayout({ children }: { children: ReactNod
           role={invitation.role}
         />
       )}
-      <DashboardNav />
-      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8">
+      <DashboardNav businessName={businessName} role={role} canSwitch={canSwitch} />
+      <main className="min-w-0 flex-1 max-w-6xl w-full mx-auto overflow-x-clip px-4 sm:px-6 py-8">
         {children}
       </main>
       <footer className="w-full border-t border-line px-4 py-4 text-center text-xs text-ink-500 sm:px-6">

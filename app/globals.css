@@ -357,6 +357,128 @@ body {
   }
 }
 
+@page receipt58 {
+  size: 58mm 200mm;
+  margin: 3mm;
+}
+
+@page receipt80 {
+  size: 80mm 200mm;
+  margin: 4mm;
+}
+
+@page receiptA4 {
+  size: A4 portrait;
+  margin: 15mm;
+}
+
+.receipt-document--plain,
+.receipt-document--plain * {
+  color: #000 !important;
+}
+
+.receipt-document--plain {
+  border-color: #000 !important;
+  background: #fff !important;
+  box-shadow: none !important;
+}
+
+.receipt-document--plain * {
+  border-color: #000 !important;
+  background-color: #fff !important;
+}
+
+@media print {
+  body.receipt-printing {
+    margin: 0 !important;
+    background: #fff !important;
+  }
+
+  body.receipt-printing * {
+    visibility: hidden !important;
+  }
+
+  body.receipt-printing .receipt-print-root,
+  body.receipt-printing .receipt-print-root * {
+    visibility: visible !important;
+  }
+
+  body.receipt-printing .receipt-print-root {
+    position: static !important;
+    display: block !important;
+    width: 100% !important;
+    padding: 0 !important;
+    background: #fff !important;
+  }
+
+  body.receipt-printing .receipt-modal-shell {
+    position: static !important;
+    display: block !important;
+    width: 100% !important;
+    max-width: none !important;
+    max-height: none !important;
+    overflow: visible !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: #fff !important;
+    box-shadow: none !important;
+  }
+
+  body.receipt-printing .receipt-modal-shell[data-receipt-paper='58mm'] {
+    page: receipt58;
+  }
+
+  body.receipt-printing .receipt-modal-shell[data-receipt-paper='80mm'] {
+    page: receipt80;
+  }
+
+  body.receipt-printing .receipt-modal-shell[data-receipt-paper='A4'] {
+    page: receiptA4;
+  }
+
+  body.receipt-printing .receipt-modal-controls,
+  body.receipt-printing .receipt-print-root > button {
+    display: none !important;
+  }
+
+  body.receipt-printing .receipt-modal-scroll {
+    display: block !important;
+    max-height: none !important;
+    overflow: visible !important;
+    padding: 0 !important;
+  }
+
+  body.receipt-printing .receipt-print-content {
+    width: 100% !important;
+    max-width: none !important;
+  }
+
+  body.receipt-printing .receipt-document,
+  body.receipt-printing .receipt-document * {
+    color: #000 !important;
+    background-color: #fff !important;
+    border-color: #000 !important;
+    box-shadow: none !important;
+  }
+
+  body.receipt-printing .receipt-document {
+    width: 100% !important;
+    max-width: none !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    font-size: 10pt !important;
+  }
+
+  body.receipt-printing .receipt-document h1 {
+    font-size: 16pt !important;
+  }
+
+  body.receipt-printing .receipt-document [class*='text-[10px]'] {
+    font-size: 8pt !important;
+  }
+}
+
 .live-command-frame {
   isolation: isolate;
   overflow-x: clip;

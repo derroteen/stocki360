@@ -3,10 +3,11 @@ import { redirect } from 'next/navigation';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { ProductStockLevel } from '@/lib/supabase/types';
 import OverviewChart from './OverviewChart';
-import { resolveActiveBusinessContext } from '@/lib/supabase/business-context';
+import { getActiveBusinessResolution } from '@/lib/supabase/business-context';
 import { getStockStatus, prioritizeLowStockProducts } from '@/lib/stock-alerts';
 
 export const dynamic = 'force-dynamic';
+export const metadata = { title: 'Dashboard' };
 
 export default async function DashboardOverviewPage() {
   const supabase = await createSupabaseServerClient();
@@ -19,7 +20,7 @@ export default async function DashboardOverviewPage() {
     redirect('/login');
   }
 
-  const resolution = await resolveActiveBusinessContext(supabase);
+  const resolution = await getActiveBusinessResolution();
 
   if (!resolution.context && resolution.memberships.length === 0) {
     redirect('/dashboard/select-business');

@@ -183,8 +183,14 @@ export default function SuppliersTable({ suppliers, stats = {} }: SuppliersTable
       ) : (
         <>
           {/* Desktop table */}
-          <div className="hidden sm:block overflow-hidden bg-panel border border-line rounded-xl shadow-xs">
-            <table className="w-full text-left border-collapse text-sm">
+          <div className="hidden sm:block rounded-xl border border-line bg-panel shadow-xs">
+            <div
+              className="overflow-x-auto overscroll-x-contain rounded-xl"
+              tabIndex={0}
+              role="region"
+              aria-label="Suppliers"
+            >
+            <table className="w-full min-w-[800px] text-left border-collapse text-sm">
               <thead>
                 <tr className="border-b border-line bg-panel text-ink-700 font-medium">
                   <th className="py-3.5 px-4">Name</th>
@@ -256,6 +262,7 @@ export default function SuppliersTable({ suppliers, stats = {} }: SuppliersTable
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
 
           {/* Mobile card list */}

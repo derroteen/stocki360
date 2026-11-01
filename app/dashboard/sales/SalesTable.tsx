@@ -5,17 +5,21 @@ import { useRouter } from 'next/navigation';
 import { Sale, ProductStockLevel, ProductBarcode } from '@/lib/supabase/types';
 import NewSaleModal from './NewSaleModal';
 import SaleDetailsModal from './SaleDetailsModal';
+import ReceiptModal from '@/components/receipts/ReceiptModal';
 
 interface SalesTableProps {
   sales: Sale[];
   activeProducts: ProductStockLevel[];
   barcodes: ProductBarcode[];
+  businessName: string;
 }
 
-export default function SalesTable({ sales, activeProducts, barcodes }: SalesTableProps) {
+export default function SalesTable({ sales, activeProducts, barcodes, businessName }: SalesTableProps) {
   const router = useRouter();
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
   const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
+  const [receiptSale, setReceiptSale] = useState<Sale | null>(null);
+  const [recentSale, setRecentSale] = useState<Sale | null>(null);
   const [paymentFilter, setPaymentFilter] = useState<string>('all');
 
   const formatCurrency = (val: number | null | undefined) => {
@@ -28,7 +32,10 @@ export default function SalesTable({ sales, activeProducts, barcodes }: SalesTab
 
   const formatDate = (dateStr: string) => {
     try {
-      return new Intl.DateTimeFormat('en-KE', { dateStyle: 'medium' }).format(new Date(dateStr));
+      return new Intl.DateTimeFormat('en-KE', {
+        dateStyle: 'medium',
+        timeZone: 'UTC',
+      }).format(new Date(dateStr));
     } catch {
       return dateStr;
     }
@@ -43,7 +50,8 @@ export default function SalesTable({ sales, activeProducts, barcodes }: SalesTab
 
   const totalRevenue = filteredSales.reduce((sum, s) => sum + (s.total_amount || 0), 0);
 
-  const handleSaveSuccess = () => {
+  const handleSaveSuccess = (sale: Sale) => {
+    setRecentSale(sale);
     router.refresh();
   };
 
@@ -74,6 +82,23 @@ export default function SalesTable({ sales, activeProducts, barcodes }: SalesTab
           </button>
         </div>
       </div>
+
+      {recentSale && (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-line bg-subtle px-4 py-2 text-sm text-ink-700" role="status">
+          <span>Sale recorded. View your receipt:</span>
+          <button
+            type="button"
+            onClick={() => {
+              setReceiptSale(recentSale);
+              setRecentSale(null);
+            }}
+            className="min-h-[44px] rounded-lg px-3 font-semibold text-accent-text hover:bg-subtle-strong"
+            aria-label="View receipt for the sale just recorded"
+          >
+            View receipt
+          </button>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-panel border border-line rounded-xl p-4 space-y-1 shadow-2xs">
@@ -153,8 +178,14 @@ export default function SalesTable({ sales, activeProducts, barcodes }: SalesTab
         </div>
       ) : (
         <>
-          <div className="hidden sm:block overflow-hidden bg-panel border border-line rounded-xl shadow-xs">
-            <table className="w-full text-left border-collapse text-sm">
+          <div className="hidden sm:block rounded-xl border border-line bg-panel shadow-xs">
+            <div
+              className="overflow-x-auto overscroll-x-contain rounded-xl"
+              tabIndex={0}
+              role="region"
+              aria-label="Sales"
+            >
+            <table className="w-full min-w-[900px] text-left border-collapse text-sm">
               <thead>
                 <tr className="border-b border-line bg-panel text-ink-700 font-medium">
                   <th className="py-3.5 px-4">Date</th>
@@ -203,22 +234,36 @@ export default function SalesTable({ sales, activeProducts, barcodes }: SalesTab
                         {formatCurrency(sale.total_amount)}
                       </td>
                       <td className="py-4 px-4 text-right">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedSale(sale);
-                          }}
-                          className="min-h-[36px] px-3 py-1 text-xs font-medium text-accent-text bg-accent-50 hover:bg-accent-100 border border-accent-200 rounded-lg transition-colors inline-flex items-center gap-1 cursor-pointer"
-                        >
-                          View Details
-                        </button>
+                        <div className="flex justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedSale(sale);
+                            }}
+                            className="min-h-[44px] px-3 py-1 text-xs font-medium text-accent-text bg-accent-50 hover:bg-accent-100 border border-accent-200 rounded-lg transition-colors inline-flex items-center gap-1 cursor-pointer"
+                          >
+                            View Details
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setReceiptSale(sale);
+                            }}
+                            className="min-h-[44px] px-3 py-1 text-xs font-medium text-ink-700 bg-card hover:bg-subtle border border-line-strong rounded-lg transition-colors cursor-pointer"
+                            aria-label={`View receipt for sale ${sale.id.slice(-8).toUpperCase()}`}
+                          >
+                            Receipt
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
                 })}
               </tbody>
             </table>
+            </div>
           </div>
 
           <div className="block sm:hidden space-y-3">
@@ -236,15 +281,15 @@ export default function SalesTable({ sales, activeProducts, barcodes }: SalesTab
                   className="bg-panel border border-line rounded-xl p-4 min-h-[44px] space-y-3 cursor-pointer hover:border-accent-500/50 active:bg-subtle-strong transition-all"
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <div>
+                    <div className="min-w-0">
                       <span className="font-mono text-xs text-ink-500 block">
                         {formatDate(sale.sale_date)}
                       </span>
-                      <h4 className="font-semibold text-ink-900 text-base">
+                      <h4 className="break-words font-semibold text-ink-900 text-base">
                         {sale.customer_name || 'Walk-in'}
                       </h4>
                       {sale.reference_number && (
-                        <span className="text-xs font-mono text-ink-600 block mt-0.5">
+                        <span className="break-all text-xs font-mono text-ink-600 block mt-0.5">
                           Ref: {sale.reference_number}
                         </span>
                       )}
@@ -254,20 +299,33 @@ export default function SalesTable({ sales, activeProducts, barcodes }: SalesTab
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between text-sm pt-2 border-t border-line/60">
-                    <span className="text-xs font-medium text-ink-600">
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-sm pt-2 border-t border-line/60">
+                    <span className="min-w-0 flex-1 break-words text-xs font-medium text-ink-600">
                       {itemCount} items (-{totalUnits} units) · {sale.payment_method || 'No payment method'}
                     </span>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedSale(sale);
-                      }}
-                      className="min-h-[36px] px-3 py-1 text-xs font-medium text-accent-text bg-accent-50 hover:bg-accent-100 border border-accent-200 rounded-lg transition-colors cursor-pointer"
-                    >
-                      View Details
-                    </button>
+                    <div className="flex shrink-0 gap-2">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedSale(sale);
+                        }}
+                        className="min-h-[44px] px-3 py-1 text-xs font-medium text-accent-text bg-accent-50 hover:bg-accent-100 border border-accent-200 rounded-lg transition-colors cursor-pointer"
+                      >
+                        View Details
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setReceiptSale(sale);
+                        }}
+                        className="min-h-[44px] px-3 py-1 text-xs font-medium text-ink-700 bg-card hover:bg-subtle border border-line-strong rounded-lg transition-colors cursor-pointer"
+                        aria-label={`View receipt for sale ${sale.id.slice(-8).toUpperCase()}`}
+                      >
+                        Receipt
+                      </button>
+                    </div>
                   </div>
                 </div>
               );
@@ -287,8 +345,17 @@ export default function SalesTable({ sales, activeProducts, barcodes }: SalesTab
       <SaleDetailsModal
         isOpen={Boolean(selectedSale)}
         onClose={() => setSelectedSale(null)}
+        onReceipt={setReceiptSale}
         sale={selectedSale}
       />
+
+      {receiptSale && (
+        <ReceiptModal
+          sale={receiptSale}
+          businessName={businessName}
+          onClose={() => setReceiptSale(null)}
+        />
+      )}
     </div>
   );
 }

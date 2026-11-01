@@ -1,10 +1,11 @@
 import { redirect } from 'next/navigation';
 import SuppliersTable from './SuppliersTable';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
-import { resolveActiveBusinessContext } from '@/lib/supabase/business-context';
+import { getActiveBusinessResolution } from '@/lib/supabase/business-context';
 import { Supplier } from '@/lib/supabase/types';
 
 export const dynamic = 'force-dynamic';
+export const metadata = { title: 'Suppliers' };
 
 export interface SupplierPurchaseStats {
   [supplierId: string]: {
@@ -23,7 +24,7 @@ export default async function SuppliersPage() {
     redirect('/login');
   }
 
-  const resolution = await resolveActiveBusinessContext(supabase);
+  const resolution = await getActiveBusinessResolution();
 
   if (!resolution.context && resolution.memberships.length === 0) {
     redirect('/dashboard/select-business');

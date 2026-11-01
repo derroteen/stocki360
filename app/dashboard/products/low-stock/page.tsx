@@ -1,10 +1,11 @@
 import { redirect } from 'next/navigation';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { ProductStockLevel, Category, Supplier, ProductBarcode } from '@/lib/supabase/types';
-import { resolveActiveBusinessContext } from '@/lib/supabase/business-context';
+import { getActiveBusinessResolution } from '@/lib/supabase/business-context';
 import LowStockTable from './LowStockTable';
 
 export const dynamic = 'force-dynamic';
+export const metadata = { title: 'Low Stock' };
 
 export default async function LowStockPage() {
   const supabase = await createSupabaseServerClient();
@@ -16,7 +17,7 @@ export default async function LowStockPage() {
     redirect('/login');
   }
 
-  const resolution = await resolveActiveBusinessContext(supabase);
+  const resolution = await getActiveBusinessResolution();
 
   if (!resolution.context && resolution.memberships.length === 0) {
     redirect('/dashboard/select-business');

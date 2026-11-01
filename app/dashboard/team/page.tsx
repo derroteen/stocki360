@@ -1,10 +1,11 @@
 import { redirect } from 'next/navigation';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
-import { resolveActiveBusinessContext, BusinessRole } from '@/lib/supabase/business-context';
+import { getActiveBusinessResolution, BusinessRole } from '@/lib/supabase/business-context';
 import InviteModal from './InviteModal';
 import RevokeButton from './RevokeButton';
 
 export const dynamic = 'force-dynamic';
+export const metadata = { title: 'Team' };
 
 interface TeamMember {
   id: string;
@@ -58,7 +59,7 @@ export default async function TeamPage() {
     redirect('/login');
   }
 
-  const resolution = await resolveActiveBusinessContext(supabase);
+  const resolution = await getActiveBusinessResolution();
 
   if (!resolution.context && (resolution.memberships.length === 0 || resolution.needsSelection)) {
     redirect('/dashboard/select-business');
@@ -103,8 +104,13 @@ export default async function TeamPage() {
 
       <section className="space-y-3">
         <h2 className="text-lg font-bold font-serif text-ink-900">Members</h2>
-        <div className="overflow-hidden rounded-xl border border-line bg-card shadow-2xs">
-          <div className="overflow-x-auto">
+        <div className="rounded-xl border border-line bg-card shadow-2xs">
+          <div
+            className="overflow-x-auto overscroll-x-contain rounded-xl"
+            tabIndex={0}
+            role="region"
+            aria-label="Team members"
+          >
             <table className="w-full min-w-[520px] text-left text-sm">
               <thead className="bg-subtle text-xs uppercase tracking-wider text-ink-500">
                 <tr>
@@ -130,11 +136,16 @@ export default async function TeamPage() {
       {canManageTeam && (
         <section className="space-y-3">
           <h2 className="text-lg font-bold font-serif text-ink-900">Pending invitations</h2>
-          <div className="overflow-hidden rounded-xl border border-line bg-card shadow-2xs">
+          <div className="rounded-xl border border-line bg-card shadow-2xs">
             {invitations.length === 0 ? (
               <p className="px-4 py-6 text-sm text-ink-500">No pending invitations.</p>
             ) : (
-              <div className="overflow-x-auto">
+              <div
+                className="overflow-x-auto overscroll-x-contain rounded-xl"
+                tabIndex={0}
+                role="region"
+                aria-label="Pending team invitations"
+              >
                 <table className="w-full min-w-[680px] text-left text-sm">
                   <thead className="bg-subtle text-xs uppercase tracking-wider text-ink-500">
                     <tr>

@@ -214,8 +214,14 @@ export default function ProductsTable({ active, archived, allCategories, allSupp
       ) : (
         <>
           {/* Desktop Table (screens >= 640px) */}
-          <div className="hidden sm:block overflow-hidden bg-panel border border-line rounded-xl shadow-xs">
-            <table className="w-full text-left border-collapse text-sm">
+          <div className="hidden sm:block rounded-xl border border-line bg-panel shadow-xs">
+            <div
+              className="overflow-x-auto overscroll-x-contain rounded-xl"
+              tabIndex={0}
+              role="region"
+              aria-label="Products"
+            >
+            <table className="w-full min-w-[1000px] text-left border-collapse text-sm">
               <thead>
                 <tr className="border-b border-line bg-panel text-ink-700 font-medium">
                   <th className="py-3.5 px-4">SKU</th>
@@ -341,6 +347,7 @@ export default function ProductsTable({ active, archived, allCategories, allSupp
                 })}
               </tbody>
             </table>
+            </div>
           </div>
 
           {/* Stacked Card Layout (screens < 640px) */}

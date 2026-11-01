@@ -1,9 +1,10 @@
 import { redirect } from 'next/navigation';
 import CategoriesTable from './CategoriesTable';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
-import { resolveActiveBusinessContext } from '@/lib/supabase/business-context';
+import { getActiveBusinessResolution } from '@/lib/supabase/business-context';
 
 export const dynamic = 'force-dynamic';
+export const metadata = { title: 'Categories' };
 
 export default async function CategoriesPage() {
   const supabase = await createSupabaseServerClient();
@@ -15,7 +16,7 @@ export default async function CategoriesPage() {
     redirect('/login');
   }
 
-  const resolution = await resolveActiveBusinessContext(supabase);
+  const resolution = await getActiveBusinessResolution();
 
   if (!resolution.context && resolution.memberships.length === 0) {
     redirect('/dashboard/select-business');

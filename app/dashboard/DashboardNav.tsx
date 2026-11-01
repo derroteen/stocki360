@@ -5,7 +5,21 @@ import { useEffect, useMemo, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import type { User } from '@supabase/supabase-js';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
+import type { BusinessRole } from '@/lib/supabase/business-context';
 import ThemeToggle from '@/components/ThemeToggle';
+
+interface DashboardNavProps {
+  businessName: string | null;
+  role: BusinessRole | null;
+  canSwitch: boolean;
+}
+
+const roleLabels: Record<BusinessRole, string> = {
+  owner: 'Owner',
+  admin: 'Admin',
+  storekeeper: 'Storekeeper',
+  cashier: 'Cashier',
+};
 
 function toInitial(value: string | null | undefined): string | null {
   const trimmed = value?.trim();
@@ -27,7 +41,7 @@ function resolveAvatarInitial(user: User | null): string {
   return toInitial(displayName) ?? toInitial(user?.email) ?? 'U';
 }
 
-export default function DashboardNav() {
+export default function DashboardNav({ businessName, role, canSwitch }: DashboardNavProps) {
   const router = useRouter();
   const pathname = usePathname();
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
@@ -107,10 +121,24 @@ export default function DashboardNav() {
     <header className="sticky top-0 z-40 bg-card border-b border-line shadow-2xs">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-2 sm:py-3 flex items-center justify-between gap-2 sm:gap-4">
         {/* Brand */}
-        <Link href="/dashboard" className="flex items-center gap-2">
+        <Link
+          href="/dashboard"
+          className="flex min-w-0 flex-col items-start gap-0 sm:flex-row sm:items-center sm:gap-2"
+        >
           <span className="text-lg sm:text-xl font-bold font-serif text-accent-link tracking-tight">
             Stocki360
           </span>
+          {businessName && (
+            <>
+              <span className="hidden text-ink-400 sm:inline" aria-hidden="true">|</span>
+              <span
+                title={businessName}
+                className="block max-w-[68vw] truncate text-xs font-medium text-ink-600 sm:max-w-[140px] sm:text-sm"
+              >
+                {businessName}
+              </span>
+            </>
+          )}
         </Link>
 
         {/* Desktop Navigation Pills */}
@@ -217,7 +245,7 @@ export default function DashboardNav() {
         <button
           type="button"
           onClick={() => setIsMobileMenuOpen(true)}
-          className="md:hidden p-2 text-ink-600 hover:text-ink-900 transition-colors -mr-2"
+          className="md:hidden -mr-2 inline-flex min-h-[44px] min-w-[44px] items-center justify-center text-ink-600 transition-colors hover:text-ink-900"
           aria-label="Open menu"
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -226,13 +254,40 @@ export default function DashboardNav() {
         </button>
       </div>
 
+      {businessName && role && (
+        <div className="border-t border-line-subtle bg-subtle/70">
+          <div className="mx-auto flex min-h-12 max-w-6xl flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-1 sm:px-6">
+            <p className="min-w-0 flex-1 break-words text-xs text-ink-600 sm:text-sm">
+              <span className="font-medium text-ink-700">Working in:</span>{' '}
+              <span className="font-semibold text-ink-900">{businessName}</span>
+              <span> · {roleLabels[role]}</span>
+            </p>
+            {canSwitch && (
+              <Link
+                href="/dashboard/select-business"
+                className="inline-flex min-h-[44px] shrink-0 items-center justify-center rounded-lg px-3 text-xs font-semibold text-accent-text transition-colors hover:bg-subtle-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-card sm:text-sm"
+              >
+                Switch business
+              </Link>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Mobile Menu Overlay */}
       {isMobileMenuOpen && (
         <div className="md:hidden fixed inset-0 z-50 bg-card flex flex-col">
           <div className="px-4 py-3 flex items-center justify-between border-b border-line">
-            <span className="text-lg font-bold font-serif text-accent-link tracking-tight">
-              Stocki360
-            </span>
+            <div className="min-w-0">
+              <span className="text-lg font-bold font-serif text-accent-link tracking-tight">
+                Stocki360
+              </span>
+              {businessName && (
+                <span title={businessName} className="block max-w-[68vw] truncate text-xs font-medium text-ink-600">
+                  {businessName}
+                </span>
+              )}
+            </div>
             <div className="flex items-center gap-2">
               <ThemeToggle />
               <button

@@ -1,10 +1,11 @@
 import { redirect } from 'next/navigation';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { Purchase, Supplier, ProductStockLevel } from '@/lib/supabase/types';
-import { resolveActiveBusinessContext } from '@/lib/supabase/business-context';
+import { getActiveBusinessResolution } from '@/lib/supabase/business-context';
 import PurchasesTable from './PurchasesTable';
 
 export const dynamic = 'force-dynamic';
+export const metadata = { title: 'Purchases' };
 
 export default async function PurchasesPage() {
   const supabase = await createSupabaseServerClient();
@@ -16,7 +17,7 @@ export default async function PurchasesPage() {
     redirect('/login');
   }
 
-  const resolution = await resolveActiveBusinessContext(supabase);
+  const resolution = await getActiveBusinessResolution();
 
   if (!resolution.context && resolution.memberships.length === 0) {
     redirect('/dashboard/select-business');

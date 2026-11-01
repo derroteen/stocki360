@@ -1,14 +1,13 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { createSupabaseServerClient } from '@/lib/supabase/server';
-import { resolveActiveBusinessContext } from '@/lib/supabase/business-context';
+import { getActiveBusinessResolution } from '@/lib/supabase/business-context';
 import CreateBusinessOnboarding from './CreateBusinessOnboarding';
 
 export const dynamic = 'force-dynamic';
+export const metadata = { title: 'Select Business' };
 
 export default async function SelectBusinessPage() {
-  const supabase = await createSupabaseServerClient();
-  const resolution = await resolveActiveBusinessContext(supabase);
+  const resolution = await getActiveBusinessResolution();
 
   if (!resolution.context && resolution.memberships.length === 0) {
     return <CreateBusinessOnboarding />;

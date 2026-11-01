@@ -1,7 +1,12 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { ProductStockLevel, ProductBarcode, CreateSaleItemPayload } from '@/lib/supabase/types';
+import {
+  ProductStockLevel,
+  ProductBarcode,
+  CreateSaleItemPayload,
+  Sale,
+} from '@/lib/supabase/types';
 import CameraScanner, { ScanResult } from './CameraScanner';
 
 interface NewSaleModalProps {
@@ -9,7 +14,7 @@ interface NewSaleModalProps {
   onClose: () => void;
   products: ProductStockLevel[];
   barcodes: ProductBarcode[];
-  onSuccess: () => void;
+  onSuccess: (sale: Sale) => void;
 }
 
 interface FormItem {
@@ -383,6 +388,11 @@ function NewSaleForm({
       }
       seen.add(it.productId);
 
+      if (!getProduct(it.productId)) {
+        setError(`Item #${i + 1}: The selected product is no longer available.`);
+        return;
+      }
+
       if (it.entryMode === 'package') {
         if (!productHasPackaging(it.productId)) {
           setError(`Item #${i + 1}: This product has no bulk packaging configured.`);
@@ -462,12 +472,78 @@ function NewSaleForm({
         }),
       });
 
+      const responseBody = (await response.json().catch(() => null)) as
+        | { saleId?: unknown; error?: string }
+        | null;
       if (!response.ok) {
-        const body = (await response.json().catch(() => null)) as { error?: string } | null;
-        throw new Error(body?.error ?? 'Failed to record sale.');
+        throw new Error(responseBody?.error ?? 'Failed to record sale.');
       }
 
-      onSuccess();
+      if (typeof responseBody?.saleId !== 'string') {
+        throw new Error('Sale was recorded, but its receipt details could not be loaded.');
+      }
+
+      const saleId = responseBody.saleId;
+      const createdAt = new Date().toISOString();
+      const receiptItems = items.map((item, index) => {
+        const product = getProduct(item.productId);
+        if (!product) {
+          throw new Error(`Unable to load product details for item #${index + 1}.`);
+        }
+
+        const quantity =
+          item.entryMode === 'package'
+            ? Number.parseInt(item.packageQuantity, 10) * (product.units_per_package ?? 1)
+            : Number.parseInt(item.quantity, 10);
+        const unitPrice =
+          item.entryMode === 'package'
+            ? Number(
+                (
+                  Number.parseFloat(item.packageUnitPrice) /
+                  (product.units_per_package ?? 1)
+                ).toFixed(2)
+              )
+            : Number.parseFloat(item.unitPrice);
+        const packageUnitPrice =
+          item.entryMode === 'package' ? Number.parseFloat(item.packageUnitPrice) : undefined;
+
+        return {
+          id: `${saleId}-${product.id}`,
+          sale_id: saleId,
+          product_id: product.id,
+          quantity,
+          unit_price: unitPrice,
+          line_total: quantity * unitPrice,
+          entry_mode: item.entryMode,
+          ...(item.entryMode === 'package'
+            ? {
+                package_quantity: Number.parseInt(item.packageQuantity, 10),
+                package_unit_snapshot: product.package_unit,
+                units_per_package_snapshot: product.units_per_package,
+                package_unit_price: packageUnitPrice,
+              }
+            : {}),
+          created_at: createdAt,
+          product: { id: product.id, name: product.name, sku: product.sku },
+        };
+      });
+
+      const savedSale: Sale = {
+        id: saleId,
+        business_id: products[0]?.business_id ?? '',
+        customer_name: customerName.trim() || null,
+        customer_phone: customerPhone.trim() || null,
+        reference_number: referenceNumber.trim() || null,
+        sale_date: saleDate ? new Date(saleDate).toISOString() : createdAt,
+        payment_method: paymentMethod || null,
+        notes: notes.trim() || null,
+        total_amount: receiptItems.reduce((sum, item) => sum + item.line_total, 0),
+        created_at: createdAt,
+        updated_at: createdAt,
+        sale_items: receiptItems,
+      };
+
+      onSuccess(savedSale);
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred while saving the sale.');

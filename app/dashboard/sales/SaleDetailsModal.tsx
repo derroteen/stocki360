@@ -5,10 +5,11 @@ import { Sale } from '@/lib/supabase/types';
 interface SaleDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onReceipt: (sale: Sale) => void;
   sale: Sale | null;
 }
 
-export default function SaleDetailsModal({ isOpen, onClose, sale }: SaleDetailsModalProps) {
+export default function SaleDetailsModal({ isOpen, onClose, onReceipt, sale }: SaleDetailsModalProps) {
   if (!isOpen || !sale) return null;
 
   const formatCurrency = (val: number | null | undefined) => {
@@ -21,9 +22,10 @@ export default function SaleDetailsModal({ isOpen, onClose, sale }: SaleDetailsM
 
   const formatDate = (dateStr: string) => {
     try {
-      return new Intl.DateTimeFormat('en-KE', { dateStyle: 'medium', timeStyle: 'short' }).format(
-        new Date(dateStr)
-      );
+      return new Intl.DateTimeFormat('en-KE', {
+        dateStyle: 'medium',
+        timeZone: 'UTC',
+      }).format(new Date(dateStr));
     } catch {
       return dateStr;
     }
@@ -40,16 +42,18 @@ export default function SaleDetailsModal({ isOpen, onClose, sale }: SaleDetailsM
       <div className="absolute inset-0" onClick={onClose} aria-hidden="true" />
 
       <div className="relative bg-card rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh] border border-line animate-in fade-in zoom-in-95 duration-150">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-line-subtle bg-subtle/50">
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-lg font-bold text-ink-900 font-serif">Sale Details</h2>
+        <div className="flex items-center justify-between gap-2 px-4 py-4 border-b border-line-subtle bg-subtle/50 sm:px-6">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-base font-bold text-ink-900 font-serif sm:text-lg">Sale Details</h2>
               <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-good-100 text-good-700 border border-good-600/30">
                 Stock removed
               </span>
             </div>
             <p className="text-xs text-ink-500 mt-0.5">
-              Ref: {sale.reference_number || `#${sale.id.slice(0, 8)}`} • Sold {formatDate(sale.sale_date)}
+              <span className="break-words">
+                Ref: {sale.reference_number || `#${sale.id.slice(0, 8)}`} • Sold {formatDate(sale.sale_date)}
+              </span>
             </p>
           </div>
           <button
@@ -62,7 +66,7 @@ export default function SaleDetailsModal({ isOpen, onClose, sale }: SaleDetailsM
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        <div className="min-w-0 flex-1 overflow-y-auto p-4 space-y-6 sm:p-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-xl bg-subtle border border-line text-sm">
             <div>
               <span className="text-xs font-semibold uppercase tracking-wider text-ink-500 block mb-1">
@@ -114,11 +118,60 @@ export default function SaleDetailsModal({ isOpen, onClose, sale }: SaleDetailsM
               Items Sold ({items.length})
             </h3>
             <div className="overflow-hidden rounded-xl border border-line shadow-2xs">
-              <table className="w-full text-left border-collapse text-sm">
+              <div className="sm:hidden divide-y divide-line-subtle">
+                {items.map((item) => (
+                  <div key={item.id} className="space-y-2 p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="break-words font-medium text-ink-900">
+                          {item.product?.name || 'Product'}
+                        </div>
+                        {item.product?.sku && (
+                          <div className="break-all font-mono text-xs text-ink-500">
+                            {item.product.sku}
+                          </div>
+                        )}
+                        {item.entry_mode === 'package' && item.package_quantity && item.package_unit_snapshot && (
+                          <div className="mt-0.5 text-xs text-ink-500">
+                            Sold as {item.package_quantity} {item.package_unit_snapshot}
+                            {item.package_quantity === 1 ? '' : 's'}
+                          </div>
+                        )}
+                      </div>
+                      <div className="shrink-0 text-right">
+                        <span className="block text-xs text-ink-500">Line Total</span>
+                        <span className="font-mono font-bold text-ink-900">
+                          {formatCurrency(item.line_total)}
+                        </span>
+                      </div>
+                    </div>
+                    <p className="text-xs text-ink-600">
+                      Qty sold: <span className="font-mono font-semibold text-ink-900">{item.quantity}</span>
+                      {' × '}
+                      <span className="font-mono">{formatCurrency(item.unit_price)}</span>
+                    </p>
+                  </div>
+                ))}
+                <div className="flex items-center justify-between gap-3 border-t-2 border-line bg-subtle/80 px-4 py-3.5">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-ink-600">
+                    Grand Total
+                  </span>
+                  <span className="shrink-0 text-right font-mono text-base font-bold text-ink-900">
+                    {formatCurrency(sale.total_amount)}
+                  </span>
+                </div>
+              </div>
+              <div
+                className="hidden overflow-x-auto overscroll-x-contain sm:block"
+                tabIndex={0}
+                role="region"
+                aria-label="Sale line items"
+              >
+              <table className="w-full min-w-[560px] text-left border-collapse text-sm">
                 <thead>
                   <tr className="border-b border-line bg-subtle text-ink-700 text-xs font-semibold">
                     <th className="py-3 px-4">Product</th>
-                    <th className="py-3 px-4 text-right">Quantity</th>
+                    <th className="py-3 px-4 text-right">Qty sold</th>
                     <th className="py-3 px-4 text-right">Unit Price</th>
                     <th className="py-3 px-4 text-right">Line Total</th>
                   </tr>
@@ -141,7 +194,7 @@ export default function SaleDetailsModal({ isOpen, onClose, sale }: SaleDetailsM
                         )}
                       </td>
                       <td className="py-3.5 px-4 text-right font-mono font-semibold">
-                        -{item.quantity}
+                        {item.quantity}
                       </td>
                       <td className="py-3.5 px-4 text-right font-mono text-ink-600">
                         {formatCurrency(item.unit_price)}
@@ -163,11 +216,19 @@ export default function SaleDetailsModal({ isOpen, onClose, sale }: SaleDetailsM
                   </tr>
                 </tfoot>
               </table>
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="px-6 py-4 border-t border-line-subtle bg-subtle flex items-center justify-end rounded-b-2xl">
+        <div className="px-4 py-4 border-t border-line-subtle bg-subtle flex items-center justify-between gap-2 rounded-b-2xl sm:px-6">
+          <button
+            type="button"
+            onClick={() => onReceipt(sale)}
+            className="min-h-[44px] px-4 py-2 text-sm font-medium text-accent-text bg-card border border-line-strong hover:bg-subtle-strong rounded-lg transition-colors shadow-xs cursor-pointer"
+          >
+            Receipt
+          </button>
           <button
             type="button"
             onClick={onClose}

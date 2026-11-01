@@ -2,9 +2,10 @@ import { redirect } from 'next/navigation';
 import ProductsTable from './ProductsTable';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { ProductStockLevel, Category, Supplier, ProductBarcode } from '@/lib/supabase/types';
-import { resolveActiveBusinessContext } from '@/lib/supabase/business-context';
+import { getActiveBusinessResolution } from '@/lib/supabase/business-context';
 
 export const dynamic = 'force-dynamic';
+export const metadata = { title: 'Products' };
 
 export default async function ProductsPage() {
   const supabase = await createSupabaseServerClient();
@@ -17,7 +18,7 @@ export default async function ProductsPage() {
     redirect('/login');
   }
 
-  const resolution = await resolveActiveBusinessContext(supabase);
+  const resolution = await getActiveBusinessResolution();
 
   if (!resolution.context && resolution.memberships.length === 0) {
     // Authenticated users with no memberships should be sent to business onboarding.

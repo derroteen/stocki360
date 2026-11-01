@@ -1,5 +1,7 @@
+import { cache } from 'react';
 import { cookies } from 'next/headers';
 import { SupabaseClient } from '@supabase/supabase-js';
+import { createSupabaseServerClient } from './server';
 
 export type BusinessRole = 'owner' | 'admin' | 'storekeeper' | 'cashier';
 
@@ -106,6 +108,11 @@ export async function resolveActiveBusinessContext(
     needsSelection: false,
   };
 }
+
+export const getActiveBusinessResolution = cache(async (): Promise<ActiveBusinessResolution> => {
+  const supabase = await createSupabaseServerClient();
+  return resolveActiveBusinessContext(supabase);
+});
 
 export function canWriteProducts(role: BusinessRole): boolean {
   return PRODUCT_WRITE_ROLES.includes(role);
