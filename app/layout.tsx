@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next"; // ADDED
 import PwaRuntime from "./PwaRuntime";
 import { BRAND_COMPANY_NAME } from "@/lib/brand";
 import "./globals.css";
@@ -64,6 +65,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col">
         {children}
         <PwaRuntime />
+        <Analytics /> {/* ADDED */}
       </body>
     </html>
   );
