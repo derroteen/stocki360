@@ -1,7 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Category } from '@/lib/supabase/types';
+import FormField from '@/components/forms/FormField';
+import FormErrorSummary from '@/components/forms/FormErrorSummary';
+import { focusFirstInvalid, validateFields, type FormErrors } from '@/components/forms/validation';
+
+const FIELD_LABELS = { 'category-name': 'Category name' };
 
 interface CategoryModalProps {
   isOpen: boolean;
@@ -35,6 +40,9 @@ function CategoryModalForm({
 }: Omit<CategoryModalProps, 'isOpen'>) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<FormErrors>({});
+  const submittingRef = useRef(false);
+  const summaryRef = useRef<HTMLDivElement>(null);
 
   const [name, setName] = useState(category?.name ?? '');
   const [description, setDescription] = useState(category?.description ?? '');
@@ -43,12 +51,22 @@ function CategoryModalForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submittingRef.current) return;
+    const errors = validateFields([
+      { id: 'category-name', label: 'Category name', value: name, required: true },
+    ]);
+    setFieldErrors(errors);
+    if (Object.keys(errors).length > 0) {
+      focusFirstInvalid(errors);
+      return;
+    }
     setError(null);
+    submittingRef.current = true;
     setIsSubmitting(true);
 
     try {
       const payload = {
-        name,
+        name: name.trim(),
         description,
       };
 
@@ -70,7 +88,9 @@ function CategoryModalForm({
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred. Please try again.');
+      window.setTimeout(() => summaryRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 0);
     } finally {
+      submittingRef.current = false;
       setIsSubmitting(false);
     }
   };
@@ -102,29 +122,27 @@ function CategoryModalForm({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-5">
-          {error && (
-            <div className="p-3 text-sm text-warn-700 bg-warn-50 border border-warn-200 rounded-lg">
-              {error}
-            </div>
-          )}
-
-          <div>
-            <label htmlFor="category-name" className="block text-sm font-semibold text-ink-700 mb-1.5">
-              Category name *
-            </label>
+        <form id="category-form" noValidate onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-5">
+          <FormField id="category-name" label="Category name" required error={fieldErrors['category-name']}>
             <input
-              id="category-name"
               type="text"
-              required
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => {
+                setName(e.target.value);
+                if (e.target.value.trim()) {
+                  setFieldErrors((current) => {
+                    const next = { ...current };
+                    delete next['category-name'];
+                    return next;
+                  });
+                }
+              }}
               placeholder="e.g. Electronics"
               className="w-full px-3 py-2 border border-line-strong rounded-lg shadow-xs focus:outline-hidden focus:ring-2 focus:ring-accent-500/20 focus:border-accent-500 transition-colors sm:text-sm text-base min-h-[44px]"
             />
-          </div>
+          </FormField>
 
-          <div>
+          <div className="space-y-1">
             <label htmlFor="category-description" className="block text-sm font-semibold text-ink-700 mb-1.5">
               Description (optional)
             </label>
@@ -138,7 +156,9 @@ function CategoryModalForm({
           </div>
         </form>
 
-        <div className="px-6 py-4 border-t border-line-subtle bg-subtle flex items-center justify-end gap-3 rounded-b-2xl">
+        <div ref={summaryRef} className="sticky bottom-0 z-10 border-t border-line-subtle bg-subtle px-6 py-4">
+          <FormErrorSummary errors={fieldErrors} labels={FIELD_LABELS} serverError={error} />
+          <div className="flex flex-wrap items-center justify-end gap-3">
           <button
             type="button"
             onClick={onClose}
@@ -149,12 +169,13 @@ function CategoryModalForm({
           </button>
           <button
             type="submit"
-            disabled={isSubmitting || !name.trim()}
-            onClick={handleSubmit}
+            form="category-form"
+            disabled={isSubmitting}
             className="min-h-[44px] px-5 py-2 text-sm font-medium text-white bg-accent-600 hover:bg-accent-700 border border-transparent rounded-lg transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSubmitting ? 'Saving...' : 'Save Category'}
           </button>
+          </div>
         </div>
       </div>
     </div>

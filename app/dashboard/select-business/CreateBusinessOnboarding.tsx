@@ -1,20 +1,38 @@
 'use client';
 
-import { FormEvent, useState } from 'react';
+import { FormEvent, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import FormField from '@/components/forms/FormField';
+import FormErrorSummary from '@/components/forms/FormErrorSummary';
+import { focusFirstInvalid, validateFields, type FormErrors } from '@/components/forms/validation';
+
+const FIELD_LABELS = { 'business-name': 'Business name' };
 
 export default function CreateBusinessOnboarding() {
+  const router = useRouter();
   const [name, setName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<FormErrors>({});
+  const submittingRef = useRef(false);
+  const summaryRef = useRef<HTMLDivElement>(null);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (isSubmitting) {
+    if (submittingRef.current) return;
+
+    const errors = validateFields([
+      { id: 'business-name', label: 'Business name', value: name, required: true },
+    ]);
+    setFieldErrors(errors);
+    if (Object.keys(errors).length > 0) {
+      focusFirstInvalid(errors);
       return;
     }
 
     setError(null);
+    submittingRef.current = true;
     setIsSubmitting(true);
 
     try {
@@ -23,20 +41,24 @@ export default function CreateBusinessOnboarding() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ name }),
+        body: JSON.stringify({ name: name.trim() }),
       });
 
       const data = (await response.json().catch(() => null)) as { businessId?: string; error?: string } | null;
 
       if (!response.ok || !data?.businessId) {
         setError(data?.error ?? 'Unable to create business.');
+        window.setTimeout(() => summaryRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 0);
         return;
       }
 
-      window.location.assign('/dashboard');
+      router.push('/dashboard');
+      router.refresh();
     } catch {
       setError('Unable to create business. Please try again.');
+      window.setTimeout(() => summaryRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 0);
     } finally {
+      submittingRef.current = false;
       setIsSubmitting(false);
     }
   };
@@ -49,24 +71,24 @@ export default function CreateBusinessOnboarding() {
           <p className="text-sm text-ink-600">Start by creating a business to access your dashboard.</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-1">
-            <label htmlFor="business-name" className="text-sm font-medium text-ink-800">
-              Business name
-            </label>
+        <form noValidate onSubmit={handleSubmit} className="space-y-4">
+          <FormField id="business-name" label="Business name" required error={fieldErrors['business-name']}>
             <input
-              id="business-name"
               type="text"
               value={name}
-              onChange={(event) => setName(event.target.value)}
+              onChange={(event) => {
+                setName(event.target.value);
+                if (event.target.value.trim()) setFieldErrors({});
+              }}
               placeholder="Acme Trading Co."
               className="w-full min-h-[44px] rounded-lg border border-line-strong px-3 text-sm text-ink-900 placeholder:text-ink-400 focus:outline-none focus:ring-2 focus:ring-ink-900/10"
               disabled={isSubmitting}
-              required
             />
-          </div>
+          </FormField>
 
-          {error ? <p className="text-sm text-danger-600">{error}</p> : null}
+          <div ref={summaryRef}>
+            <FormErrorSummary errors={fieldErrors} labels={FIELD_LABELS} serverError={error} />
+          </div>
 
           <button
             type="submit"

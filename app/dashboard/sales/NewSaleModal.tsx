@@ -9,6 +9,9 @@ import {
   Sale,
 } from '@/lib/supabase/types';
 import CameraScanner, { ScanResult } from './CameraScanner';
+import FormField from '@/components/forms/FormField';
+import FormErrorSummary from '@/components/forms/FormErrorSummary';
+import { clearValidFieldError, focusFirstInvalid, validateFields, type FieldRule, type FormErrors } from '@/components/forms/validation';
 
 interface NewSaleModalProps {
   isOpen: boolean;
@@ -124,6 +127,9 @@ function NewSaleForm({
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<FormErrors>({});
+  const submittingRef = useRef(false);
+  const errorSummaryRef = useRef<HTMLDivElement>(null);
 
   const [barcodeInput, setBarcodeInput] = useState('');
   const [barcodeMessage, setBarcodeMessage] = useState<string | null>(null);
@@ -308,6 +314,9 @@ function NewSaleForm({
 
   const handleProductChange = (index: number, newProductId: string) => {
     const selectedProd = getProduct(newProductId);
+    setFieldErrors((current) =>
+      Object.fromEntries(Object.entries(current).filter(([id]) => !id.startsWith(`sale-item-${index}-`))),
+    );
     const prefill = getPrefillPrices(selectedProd, 'individual');
     setItems((prev) => {
       const updated = [...prev];
@@ -324,6 +333,9 @@ function NewSaleForm({
   };
 
   const handleEntryModeChange = (index: number, mode: 'individual' | 'package') => {
+    setFieldErrors((current) =>
+      Object.fromEntries(Object.entries(current).filter(([id]) => !id.startsWith(`sale-item-${index}-`))),
+    );
     setItems((prev) => {
       const updated = [...prev];
       const prefill = getPrefillPrices(getProduct(updated[index].productId), mode);
@@ -381,6 +393,9 @@ function NewSaleForm({
   const handleRemoveItem = (index: number) => {
     if (items.length <= 1) return;
     setItems((prev) => prev.filter((_, i) => i !== index));
+    setFieldErrors((current) =>
+      Object.fromEntries(Object.entries(current).filter(([id]) => !id.startsWith('sale-item-'))),
+    );
   };
 
   const lineTotals = items.map((item) => {
@@ -415,60 +430,92 @@ function NewSaleForm({
     }).format(val);
   };
 
+  const fieldLabels: Record<string, string> = {
+    'sale-date': 'Sale date',
+    ...Object.fromEntries(items.flatMap((_, index) => [
+      [`sale-item-${index}-product`, `Item ${index + 1} product`],
+      [`sale-item-${index}-quantity`, `Item ${index + 1} quantity`],
+      [`sale-item-${index}-price`, `Item ${index + 1} unit price`],
+      [`sale-item-${index}-package-quantity`, `Item ${index + 1} package quantity`],
+      [`sale-item-${index}-package-price`, `Item ${index + 1} package price`],
+    ])),
+  };
+
+  const validateSaleForm = (): FormErrors => {
+    const errors = validateFields([
+      { id: 'sale-date', label: 'Sale date', value: saleDate, required: true },
+    ]);
+    const seen = new Set<string>();
+    items.forEach((item, index) => {
+      const productId = `sale-item-${index}-product`;
+      const product = getProduct(item.productId);
+      if (!item.productId) {
+        errors[productId] = `Item ${index + 1} product is required`;
+      } else if (seen.has(item.productId)) {
+        errors[productId] = 'Choose a different product or combine its quantity into one line';
+      } else if (!product) {
+        errors[productId] = 'The selected product is no longer available';
+      }
+      seen.add(item.productId);
+
+      if (item.entryMode === 'package') {
+        if (item.productId && !productHasPackaging(item.productId)) {
+          errors[productId] = 'This product has no bulk packaging configured';
+        }
+        const quantityId = `sale-item-${index}-package-quantity`;
+        Object.assign(errors, validateFields([
+          { id: quantityId, label: `Item ${index + 1} package quantity`, value: item.packageQuantity, required: true, min: 1, wholeNumber: true },
+          { id: `sale-item-${index}-package-price`, label: `Item ${index + 1} package price`, value: item.packageUnitPrice, required: true, min: 0 },
+        ]));
+        if (product && Number(item.packageQuantity) > maxSellable(item.productId, 'package')) {
+          errors[quantityId] = `Only ${maxSellable(item.productId, 'package')} package(s) available in stock`;
+        }
+      } else {
+        const quantityId = `sale-item-${index}-quantity`;
+        Object.assign(errors, validateFields([
+          { id: quantityId, label: `Item ${index + 1} quantity`, value: item.quantity, required: true, min: 1, wholeNumber: true },
+          { id: `sale-item-${index}-price`, label: `Item ${index + 1} unit price`, value: item.unitPrice, required: true, min: 0 },
+        ]));
+        if (product && Number(item.quantity) > maxSellable(item.productId, 'individual')) {
+          errors[quantityId] = `Only ${maxSellable(item.productId, 'individual')} available in stock`;
+        }
+      }
+    });
+    return errors;
+  };
+
+  const clearSaleFieldError = (rule: FieldRule) => {
+    setFieldErrors((current) => clearValidFieldError(current, rule.id, rule));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submittingRef.current) return;
     setError(null);
+    const errors = validateSaleForm();
+    setFieldErrors(errors);
+    if (Object.keys(errors).length > 0) {
+      focusFirstInvalid(errors);
+      return;
+    }
 
     const seen = new Set<string>();
     const payloadItems: CreateSaleItemPayload[] = [];
 
     for (let i = 0; i < items.length; i++) {
       const it = items[i];
-      if (!it.productId) {
-        setError(`Please select a product for item #${i + 1}.`);
-        return;
-      }
       if (seen.has(it.productId)) {
-        const prod = getProduct(it.productId);
-        setError(
-          `Product "${prod?.name ?? 'selected'}" is added more than once. Combine the quantity into a single line.`
-        );
-        return;
+        continue;
       }
       seen.add(it.productId);
 
-      if (!getProduct(it.productId)) {
-        setError(`Item #${i + 1}: The selected product is no longer available.`);
-        return;
-      }
-
       if (it.entryMode === 'package') {
-        if (!productHasPackaging(it.productId)) {
-          setError(`Item #${i + 1}: This product has no bulk packaging configured.`);
-          return;
-        }
-
         const pkgQty = parseInt(it.packageQuantity, 10);
-        if (!pkgQty || pkgQty <= 0) {
-          setError(`Item #${i + 1}: Package quantity must be at least 1.`);
-          return;
-        }
-
         const pkgPrice = parseFloat(it.packageUnitPrice);
-        if (isNaN(pkgPrice) || pkgPrice < 0) {
-          setError(`Item #${i + 1}: Please provide a valid price per package.`);
-          return;
-        }
 
         // Client-side stock hint only -- the RPC/record_stock_movement is
         // the actual source of truth and will reject an over-sell even if
         // this check is somehow bypassed or current_stock is stale.
-        const max = maxSellable(it.productId, 'package');
-        if (pkgQty > max) {
-          setError(`Item #${i + 1}: Only ${max} package(s) available in stock.`);
-          return;
-        }
-
         payloadItems.push({
           productId: it.productId,
           entryMode: 'package',
@@ -477,22 +524,7 @@ function NewSaleForm({
         });
       } else {
         const qty = parseInt(it.quantity, 10);
-        if (!qty || qty <= 0) {
-          setError(`Item #${i + 1}: Quantity must be at least 1.`);
-          return;
-        }
-
         const price = parseFloat(it.unitPrice);
-        if (isNaN(price) || price < 0) {
-          setError(`Item #${i + 1}: Please provide a valid unit price.`);
-          return;
-        }
-
-        const max = maxSellable(it.productId, 'individual');
-        if (qty > max) {
-          setError(`Item #${i + 1}: Only ${max} available in stock.`);
-          return;
-        }
 
         payloadItems.push({
           productId: it.productId,
@@ -503,6 +535,7 @@ function NewSaleForm({
       }
     }
 
+    submittingRef.current = true;
     setIsSubmitting(true);
 
     try {
@@ -525,7 +558,33 @@ function NewSaleForm({
         | { saleId?: unknown; error?: string }
         | null;
       if (!response.ok) {
-        throw new Error(responseBody?.error ?? 'Failed to record sale.');
+        const serverMessage = responseBody?.error ?? 'Failed to record sale.';
+        const normalizedServerMessage = serverMessage.toLowerCase();
+        if (
+          normalizedServerMessage.includes('not enough stock') ||
+          normalizedServerMessage.includes('insufficient stock') ||
+          normalizedServerMessage.includes('exceed available stock')
+        ) {
+          const itemIndex = items.findIndex((item) => {
+            const productName = getProduct(item.productId)?.name.toLowerCase();
+            return Boolean(productName && normalizedServerMessage.includes(productName));
+          });
+          const overLimitIndex = items.findIndex((item) => {
+            const quantity = Number(item.entryMode === 'package' ? item.packageQuantity : item.quantity);
+            return quantity > maxSellable(item.productId, item.entryMode);
+          });
+          const index = itemIndex >= 0 ? itemIndex : overLimitIndex >= 0 ? overLimitIndex : 0;
+          const quantityId = items[index]?.entryMode === 'package'
+            ? `sale-item-${index}-package-quantity`
+            : `sale-item-${index}-quantity`;
+          const mappedErrors = {
+            [quantityId]: 'Not enough stock is available for this quantity. Check the stock level and try again.',
+          };
+          setFieldErrors(mappedErrors);
+          focusFirstInvalid(mappedErrors);
+          return;
+        }
+        throw new Error(serverMessage);
       }
 
       if (typeof responseBody?.saleId !== 'string') {
@@ -596,7 +655,9 @@ function NewSaleForm({
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred while saving the sale.');
+      window.setTimeout(() => errorSummaryRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 0);
     } finally {
+      submittingRef.current = false;
       setIsSubmitting(false);
     }
   };
@@ -634,12 +695,7 @@ function NewSaleForm({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">
-          {error && (
-            <div className="p-3 text-sm text-warn-700 bg-warn-50 border border-warn-200 rounded-lg">
-              {error}
-            </div>
-          )}
+        <form id="sale-form" noValidate onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
@@ -687,17 +743,17 @@ function NewSaleForm({
             </div>
 
             <div>
-              <label htmlFor="sale-date" className="block text-xs font-semibold text-ink-700 mb-1.5">
-                Sale Date
-              </label>
-              <input
-                id="sale-date"
+              <FormField id="sale-date" label="Sale Date" required error={fieldErrors['sale-date']}>
+                <input
                 type="date"
-                required
                 value={saleDate}
-                onChange={(e) => setSaleDate(e.target.value)}
+                onChange={(e) => {
+                  setSaleDate(e.target.value);
+                  clearSaleFieldError({ id: 'sale-date', label: 'Sale date', value: e.target.value, required: true });
+                }}
                 className="w-full px-3 py-2 border border-line-strong rounded-lg text-sm focus:ring-2 focus:ring-accent-500 focus:border-accent-500 min-h-[44px] bg-card"
               />
+              </FormField>
             </div>
 
             <div>
@@ -799,13 +855,14 @@ function NewSaleForm({
                   >
                     <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end">
                       <div className="sm:col-span-5">
-                        <label className="block text-xs font-medium text-ink-600 mb-1">
-                          Product *
-                        </label>
+                        <FormField id={`sale-item-${index}-product`} label="Product" required error={fieldErrors[`sale-item-${index}-product`]}>
                         <select
+                          id={`sale-item-${index}-product`}
                           value={item.productId}
-                          onChange={(e) => handleProductChange(index, e.target.value)}
-                          required
+                          onChange={(e) => {
+                            handleProductChange(index, e.target.value);
+                            clearSaleFieldError({ id: `sale-item-${index}-product`, label: `Item ${index + 1} product`, value: e.target.value, required: true });
+                          }}
                           className="w-full px-3 py-2 border border-line-strong rounded-lg text-sm bg-card min-h-[44px]"
                         >
                           <option value="">Select product...</option>
@@ -815,40 +872,43 @@ function NewSaleForm({
                             </option>
                           ))}
                         </select>
+                        </FormField>
                       </div>
 
                       {item.entryMode === 'individual' && (
                         <>
                           <div className="sm:col-span-2">
-                            <label className="block text-xs font-medium text-ink-600 mb-1">
-                              Qty *
-                            </label>
+                            <FormField id={`sale-item-${index}-quantity`} label="Qty" required error={fieldErrors[`sale-item-${index}-quantity`]}>
                             <input
                               type="number"
                               min="1"
                               step="1"
-                              required
                               value={item.quantity}
-                              onChange={(e) => handleQuantityChange(index, e.target.value)}
+                              onChange={(e) => {
+                                handleQuantityChange(index, e.target.value);
+                                clearSaleFieldError({ id: `sale-item-${index}-quantity`, label: `Item ${index + 1} quantity`, value: e.target.value, required: true, min: 1, wholeNumber: true, max: item.productId ? maxSellable(item.productId, 'individual') : undefined });
+                              }}
                               placeholder="1"
                               className="w-full px-3 py-2 border border-line-strong rounded-lg text-sm bg-card min-h-[44px]"
                             />
+                            </FormField>
                           </div>
 
                           <div className="sm:col-span-2">
-                            <label className="block text-xs font-medium text-ink-600 mb-1">
-                              Unit Price (KES) *
-                            </label>
+                            <FormField id={`sale-item-${index}-price`} label="Unit Price (KES)" required error={fieldErrors[`sale-item-${index}-price`]}>
                             <input
                               type="number"
                               min="0"
                               step="0.01"
-                              required
                               value={item.unitPrice}
-                              onChange={(e) => handleUnitPriceChange(index, e.target.value)}
+                              onChange={(e) => {
+                                handleUnitPriceChange(index, e.target.value);
+                                clearSaleFieldError({ id: `sale-item-${index}-price`, label: `Item ${index + 1} unit price`, value: e.target.value, required: true, min: 0 });
+                              }}
                               placeholder="0.00"
                               className="w-full px-3 py-2 border border-line-strong rounded-lg text-sm bg-card min-h-[44px]"
                             />
+                            </FormField>
                           </div>
                         </>
                       )}
@@ -856,35 +916,37 @@ function NewSaleForm({
                       {item.entryMode === 'package' && (
                         <>
                           <div className="sm:col-span-2">
-                            <label className="block text-xs font-medium text-ink-600 mb-1">
-                              Qty ({selectedProduct?.package_unit}s) *
-                            </label>
+                            <FormField id={`sale-item-${index}-package-quantity`} label={`Qty (${selectedProduct?.package_unit}s)`} required error={fieldErrors[`sale-item-${index}-package-quantity`]}>
                             <input
                               type="number"
                               min="1"
                               step="1"
-                              required
                               value={item.packageQuantity}
-                              onChange={(e) => handlePackageQuantityChange(index, e.target.value)}
+                              onChange={(e) => {
+                                handlePackageQuantityChange(index, e.target.value);
+                                clearSaleFieldError({ id: `sale-item-${index}-package-quantity`, label: `Item ${index + 1} package quantity`, value: e.target.value, required: true, min: 1, wholeNumber: true, max: item.productId ? maxSellable(item.productId, 'package') : undefined });
+                              }}
                               placeholder="1"
                               className="w-full px-3 py-2 border border-line-strong rounded-lg text-sm bg-card min-h-[44px]"
                             />
+                            </FormField>
                           </div>
 
                           <div className="sm:col-span-2">
-                            <label className="block text-xs font-medium text-ink-600 mb-1">
-                              Price / {selectedProduct?.package_unit} (KES) *
-                            </label>
+                            <FormField id={`sale-item-${index}-package-price`} label={`Price / ${selectedProduct?.package_unit} (KES)`} required error={fieldErrors[`sale-item-${index}-package-price`]}>
                             <input
                               type="number"
                               min="0"
                               step="0.01"
-                              required
                               value={item.packageUnitPrice}
-                              onChange={(e) => handlePackageUnitPriceChange(index, e.target.value)}
+                              onChange={(e) => {
+                                handlePackageUnitPriceChange(index, e.target.value);
+                                clearSaleFieldError({ id: `sale-item-${index}-package-price`, label: `Item ${index + 1} package price`, value: e.target.value, required: true, min: 0 });
+                              }}
                               placeholder="0.00"
                               className="w-full px-3 py-2 border border-line-strong rounded-lg text-sm bg-card min-h-[44px]"
                             />
+                            </FormField>
                           </div>
                         </>
                       )}
@@ -1010,7 +1072,9 @@ function NewSaleForm({
           </div>
         </form>
 
-        <div className="px-6 py-4 border-t border-line-subtle bg-subtle flex items-center justify-end gap-3 rounded-b-2xl">
+        <div ref={errorSummaryRef} className="sticky bottom-0 z-10 shrink-0 border-t border-line-subtle bg-subtle px-6 py-4">
+          <FormErrorSummary errors={fieldErrors} labels={fieldLabels} serverError={error} />
+          <div className="flex items-center justify-end gap-3">
           <button
             type="button"
             onClick={onClose}
@@ -1020,13 +1084,14 @@ function NewSaleForm({
             Cancel
           </button>
           <button
-            type="button"
-            onClick={handleSubmit}
+            type="submit"
+            form="sale-form"
             disabled={isSubmitting || items.length === 0}
             className="min-h-[44px] px-5 py-2 text-sm font-medium text-white bg-accent-600 hover:bg-accent-700 border border-transparent rounded-lg transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer"
           >
             {isSubmitting ? 'Recording Sale...' : 'Complete Sale'}
           </button>
+          </div>
         </div>
       </div>
 

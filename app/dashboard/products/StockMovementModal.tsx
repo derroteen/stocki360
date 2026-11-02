@@ -1,7 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { ProductStockLevel } from '@/lib/supabase/types';
+import FormField from '@/components/forms/FormField';
+import FormErrorSummary from '@/components/forms/FormErrorSummary';
+import { focusFirstInvalid, validateFields, type FormErrors } from '@/components/forms/validation';
+
+const FIELD_LABELS = { quantity: 'Quantity' };
 
 interface StockMovementModalProps {
   product: ProductStockLevel;
@@ -23,6 +28,9 @@ export default function StockMovementModal({
   const [error, setError] = useState<string | null>(null);
   const [submissionKey, setSubmissionKey] = useState<string | null>(null);
   const [receiveAsPackage, setReceiveAsPackage] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<FormErrors>({});
+  const submittingRef = useRef(false);
+  const summaryRef = useRef<HTMLDivElement>(null);
 
   const numQty = parseInt(quantity, 10) || 0;
   const currentStock = product.current_stock ?? 0;
@@ -38,12 +46,20 @@ export default function StockMovementModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
+    if (submittingRef.current) return;
+    const errors = validateFields([
+      { id: 'quantity', label: 'Quantity', value: quantity, required: true, min: 1, wholeNumber: true },
+    ]);
     if (movementType === 'out' && numQty > currentStock) {
-      setError(`Not enough stock — only ${currentStock} available`);
+      errors.quantity = `Not enough stock — only ${currentStock} available`;
+    }
+    setFieldErrors(errors);
+    if (Object.keys(errors).length > 0) {
+      focusFirstInvalid(errors);
       return;
     }
 
+    submittingRef.current = true;
     setLoading(true);
     setError(null);
 
@@ -81,7 +97,17 @@ export default function StockMovementModal({
 
       if (!response.ok) {
           const body = await response.json().catch(() => null);
-          throw new Error(body?.error || body?.message || 'An error occurred while recording stock movement');
+          const message = body?.error || body?.message || 'An error occurred while recording stock movement';
+          if (typeof message === 'string' && (
+            message.toLowerCase().includes('not enough stock') ||
+            message.toLowerCase().includes('insufficient stock')
+          )) {
+            const mappedErrors = { quantity: message };
+            setFieldErrors(mappedErrors);
+            focusFirstInvalid(mappedErrors);
+            return;
+          }
+          throw new Error(message);
       }
 
       onSaved();
@@ -89,7 +115,9 @@ export default function StockMovementModal({
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred while recording stock movement');
+      window.setTimeout(() => summaryRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 0);
     } finally {
+      submittingRef.current = false;
       setLoading(false);
     }
   };
@@ -116,12 +144,7 @@ export default function StockMovementModal({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 sm:px-8 py-6 space-y-4">
-          {error && (
-            <div className="p-3 text-sm text-warn-700 bg-warn-100 border border-warn-600/30 rounded-lg">
-              {error}
-            </div>
-          )}
+        <form id="movement-form" noValidate onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 sm:px-8 py-6 space-y-4">
 
           {/* Movement Type Selector */}
           <div>
@@ -134,6 +157,13 @@ export default function StockMovementModal({
                 onClick={() => {
                   setMovementType('in');
                   resetSubmissionKey();
+                  if (Number(quantity) >= 1 && Number.isInteger(Number(quantity))) {
+                    setFieldErrors((current) => {
+                      const next = { ...current };
+                      delete next.quantity;
+                      return next;
+                    });
+                  }
                 }}
                 className={`min-h-[44px] px-3 py-2 text-sm font-medium rounded-lg transition-colors cursor-pointer border ${
                   movementType === 'in'
@@ -148,6 +178,9 @@ export default function StockMovementModal({
                 onClick={() => {
                   setMovementType('out');
                   resetSubmissionKey();
+                  if (Number(quantity) > currentStock) {
+                    setFieldErrors((current) => ({ ...current, quantity: `Not enough stock — only ${currentStock} available` }));
+                  }
                 }}
                 className={`min-h-[44px] px-3 py-2 text-sm font-medium rounded-lg transition-colors cursor-pointer border ${
                   movementType === 'out'
@@ -162,6 +195,13 @@ export default function StockMovementModal({
                 onClick={() => {
                   setMovementType('adjustment');
                   resetSubmissionKey();
+                  if (Number(quantity) >= 1 && Number.isInteger(Number(quantity))) {
+                    setFieldErrors((current) => {
+                      const next = { ...current };
+                      delete next.quantity;
+                      return next;
+                    });
+                  }
                 }}
                 className={`min-h-[44px] px-3 py-2 text-sm font-medium rounded-lg transition-colors cursor-pointer border ${
                   movementType === 'adjustment'
@@ -216,19 +256,25 @@ export default function StockMovementModal({
           )}
 
           {/* Quantity Input */}
-          <div>
-            <label className="block text-sm font-medium text-ink-700 mb-1" htmlFor="quantity">
-              Quantity {receiveAsPackage && movementType === 'in' ? `(in ${product.package_unit}s)` : `(in ${product.stock_unit || 'unit'}s)`}
-            </label>
+          <FormField id="quantity" label={`Quantity ${receiveAsPackage && movementType === 'in' ? `(in ${product.package_unit}s)` : `(in ${product.stock_unit || 'unit'}s)`}`} required error={fieldErrors.quantity}>
+            {(controlProps) => (
+              <>
             <input
-              id="quantity"
+              {...controlProps}
               type="number"
               min="1"
-              required
               value={quantity}
               onChange={(e) => {
                 setQuantity(e.target.value);
                 resetSubmissionKey();
+                const nextErrors = validateFields([{ id: 'quantity', label: 'Quantity', value: e.target.value, required: true, min: 1, wholeNumber: true }]);
+                if (!nextErrors.quantity || (movementType !== 'out' || Number(e.target.value) <= currentStock)) {
+                  setFieldErrors((current) => {
+                    const next = { ...current };
+                    delete next.quantity;
+                    return next;
+                  });
+                }
               }}
               className="w-full min-h-[44px] px-3 py-2 border border-line rounded-lg bg-card text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
             />
@@ -237,7 +283,9 @@ export default function StockMovementModal({
                 Stock added: <strong>{numQty * product.units_per_package} {product.stock_unit || 'unit'}s</strong>
               </p>
             )}
-          </div>
+              </>
+            )}
+          </FormField>
 
           {/* Note Input */}
           <div>
@@ -258,7 +306,9 @@ export default function StockMovementModal({
           </div>
         </form>
 
-        <div className="flex items-center justify-end gap-3 border-t border-line px-6 sm:px-8 py-4 shrink-0">
+        <div ref={summaryRef} className="sticky bottom-0 z-10 shrink-0 border-t border-line bg-panel px-6 py-4 sm:px-8">
+          <FormErrorSummary errors={fieldErrors} labels={FIELD_LABELS} serverError={error} />
+          <div className="flex flex-wrap items-center justify-end gap-3">
           <button
             type="button"
             onClick={handleClose}
@@ -269,13 +319,14 @@ export default function StockMovementModal({
           </button>
 
           <button
-            type="button"
-            onClick={handleSubmit}
+            type="submit"
+            form="movement-form"
             disabled={loading}
             className="min-h-[44px] px-4 py-2 text-sm font-medium text-white bg-accent-500 hover:bg-accent-600 rounded-lg transition-colors shadow-sm cursor-pointer disabled:opacity-50"
           >
             {loading ? 'Saving...' : 'Record Movement'}
           </button>
+          </div>
         </div>
       </div>
     </div>

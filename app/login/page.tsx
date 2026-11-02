@@ -1,11 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import ThemeToggle from '@/components/ThemeToggle';
 import { BRAND_COMPANY_NAME } from '@/lib/brand';
+import FormField from '@/components/forms/FormField';
+import FormErrorSummary from '@/components/forms/FormErrorSummary';
+import { clearValidFieldError, focusFirstInvalid, validateFields, type FormErrors } from '@/components/forms/validation';
+
+const FIELD_LABELS = { email: 'Email address', password: 'Password', confirmPassword: 'Confirm password' };
 
 export default function LoginPage() {
   const router = useRouter();
@@ -18,43 +23,75 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<FormErrors>({});
+  const submittingRef = useRef(false);
+  const errorSummaryRef = useRef<HTMLDivElement>(null);
+
+  const showServerError = (value: string) => {
+    setError(value);
+    window.setTimeout(
+      () => errorSummaryRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }),
+      0,
+    );
+  };
 
   const handlePasswordChange = (val: string) => {
     setPassword(val);
-    if (error === 'Passwords do not match') {
-      setError(null);
+    setFieldErrors((current) => clearValidFieldError(current, 'password', { id: 'password', label: 'Password', value: val, required: true }));
+    if (confirmPassword && val === confirmPassword) {
+      setFieldErrors((current) => {
+        const next = { ...current };
+        delete next.confirmPassword;
+        return next;
+      });
     }
+    setError(null);
   };
 
   const handleConfirmPasswordChange = (val: string) => {
     setConfirmPassword(val);
-    if (error === 'Passwords do not match') {
-      setError(null);
-    }
+    const errors = validateFields([{ id: 'confirmPassword', label: 'Confirm password', value: val, required: true }]);
+    if (val && password !== val) errors.confirmPassword = 'Passwords do not match';
+    setFieldErrors((current) => {
+      if (errors.confirmPassword) return { ...current, ...errors };
+      const next = { ...current };
+      delete next.confirmPassword;
+      return next;
+    });
+    setError(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submittingRef.current) return;
+    const errors = validateFields([
+      { id: 'email', label: 'Email address', value: email, required: true, pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/ },
+      { id: 'password', label: 'Password', value: password, required: true },
+      ...(isSignUp ? [{ id: 'confirmPassword', label: 'Confirm password', value: confirmPassword, required: true }] : []),
+    ]);
+    if (isSignUp && password !== confirmPassword && !errors.confirmPassword) {
+      errors.confirmPassword = 'Passwords do not match';
+    }
+    setFieldErrors(errors);
+    if (Object.keys(errors).length > 0) {
+      focusFirstInvalid(errors);
+      return;
+    }
+    submittingRef.current = true;
     setLoading(true);
     setError(null);
     setMessage(null);
-
-    if (isSignUp && password !== confirmPassword) {
-      setError('Passwords do not match');
-      setLoading(false);
-      return;
-    }
 
     try {
       const supabase = createSupabaseBrowserClient();
       if (isSignUp) {
         const { data, error: signUpError } = await supabase.auth.signUp({
-          email,
+          email: email.trim(),
           password,
         });
 
         if (signUpError) {
-          setError(signUpError.message);
+          showServerError(signUpError.message);
         } else if (data.session) {
           router.push('/dashboard');
           router.refresh();
@@ -63,20 +100,21 @@ export default function LoginPage() {
         }
       } else {
         const { error: signInError } = await supabase.auth.signInWithPassword({
-          email,
+          email: email.trim(),
           password,
         });
 
         if (signInError) {
-          setError(signInError.message);
+          showServerError(signInError.message);
         } else {
           router.push('/dashboard');
           router.refresh();
         }
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+      showServerError(err instanceof Error ? err.message : 'An unexpected error occurred');
     } finally {
+      submittingRef.current = false;
       setLoading(false);
     }
   };
@@ -84,6 +122,7 @@ export default function LoginPage() {
   const toggleMode = () => {
     setIsSignUp((prev) => !prev);
     setError(null);
+    setFieldErrors({});
     setMessage(null);
     setConfirmPassword('');
   };
@@ -171,54 +210,45 @@ export default function LoginPage() {
             </p>
           </div>
 
-          {error && (
-            <div className="p-3 text-sm text-warn-700 bg-warn-100 border border-warn-600/30 rounded-lg">
-              {error}
-            </div>
-          )}
-
           {message && (
             <div className="p-3 text-sm text-good-700 bg-good-100 border border-good-600/30 rounded-lg">
               {message}
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-ink-700 mb-1" htmlFor="email">
-                Email address
-              </label>
+          <form noValidate onSubmit={handleSubmit} className="space-y-4">
+            <FormField id="email" label="Email address" required error={fieldErrors.email}>
               <input
-                id="email"
                 type="email"
-                required
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setEmail(value);
+                  setFieldErrors((current) => clearValidFieldError(current, 'email', { id: 'email', label: 'Email address', value, required: true, pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/ }));
+                  setError(null);
+                }}
                 className="w-full min-h-[44px] px-3 py-2 border border-line rounded-lg bg-card text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
                 placeholder="you@example.com"
               />
-            </div>
+            </FormField>
 
-            <div>
-              <label className="block text-sm font-medium text-ink-700 mb-1" htmlFor="password">
-                Password
-              </label>
-              <div className="relative flex items-center">
-                <input
-                  id="password"
-                  type={showPassword ? 'text' : 'password'}
-                  required
-                  value={password}
-                  onChange={(e) => handlePasswordChange(e.target.value)}
-                  className="w-full min-h-[44px] pl-3 pr-10 py-2 border border-line rounded-lg bg-card text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
-                  placeholder="••••••••"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((prev) => !prev)}
-                  className="absolute right-3 text-ink-500 hover:text-ink-900 transition-colors p-1 cursor-pointer flex items-center justify-center"
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
-                >
+            <FormField id="password" label="Password" required error={fieldErrors.password}>
+              {(controlProps) => (
+                <div className="relative flex items-center">
+                  <input
+                    {...controlProps}
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => handlePasswordChange(e.target.value)}
+                    className="w-full min-h-[44px] pl-3 pr-10 py-2 border border-line rounded-lg bg-card text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
+                    placeholder="••••••••"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    className="absolute right-3 text-ink-500 hover:text-ink-900 transition-colors p-1 cursor-pointer flex items-center justify-center"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  >
                   {showPassword ? (
                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
@@ -229,31 +259,29 @@ export default function LoginPage() {
                       <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
                   )}
-                </button>
-              </div>
-            </div>
+                  </button>
+                </div>
+              )}
+            </FormField>
 
             {isSignUp && (
-              <div>
-                <label className="block text-sm font-medium text-ink-700 mb-1" htmlFor="confirmPassword">
-                  Confirm password
-                </label>
-                <div className="relative flex items-center">
-                  <input
-                    id="confirmPassword"
-                    type={showConfirmPassword ? 'text' : 'password'}
-                    required
-                    value={confirmPassword}
-                    onChange={(e) => handleConfirmPasswordChange(e.target.value)}
-                    className="w-full min-h-[44px] pl-3 pr-10 py-2 border border-line rounded-lg bg-card text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
-                    placeholder="••••••••"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword((prev) => !prev)}
-                    className="absolute right-3 text-ink-500 hover:text-ink-900 transition-colors p-1 cursor-pointer flex items-center justify-center"
-                    aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
-                  >
+              <FormField id="confirmPassword" label="Confirm password" required error={fieldErrors.confirmPassword}>
+                {(controlProps) => (
+                  <div className="relative flex items-center">
+                    <input
+                      {...controlProps}
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      value={confirmPassword}
+                      onChange={(e) => handleConfirmPasswordChange(e.target.value)}
+                      className="w-full min-h-[44px] pl-3 pr-10 py-2 border border-line rounded-lg bg-card text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
+                      placeholder="••••••••"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword((prev) => !prev)}
+                      className="absolute right-3 text-ink-500 hover:text-ink-900 transition-colors p-1 cursor-pointer flex items-center justify-center"
+                      aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
+                    >
                     {showConfirmPassword ? (
                       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
@@ -264,11 +292,15 @@ export default function LoginPage() {
                         <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                       </svg>
                     )}
-                  </button>
-                </div>
-              </div>
+                      </button>
+                    </div>
+                  )}
+                </FormField>
             )}
 
+            <div ref={errorSummaryRef}>
+              <FormErrorSummary errors={fieldErrors} labels={FIELD_LABELS} serverError={error} />
+            </div>
             <button
               type="submit"
               disabled={loading}

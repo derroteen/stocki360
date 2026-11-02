@@ -4,6 +4,21 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ProductStockLevel, Category, Supplier, ProductBarcode } from '@/lib/supabase/types';
+import FormField from '@/components/forms/FormField';
+import FormErrorSummary from '@/components/forms/FormErrorSummary';
+import { clearValidFieldError, focusFirstInvalid, validateFields, type FieldRule, type FormErrors } from '@/components/forms/validation';
+
+const FIELD_LABELS: Record<string, string> = {
+  'product-code': 'Product code',
+  'product-name': 'Name',
+  'cost-price': 'Cost price',
+  'sell-price': 'Selling price',
+  'reorder-level': 'Reorder level',
+  'stock-unit': 'Stock/sale unit',
+  'units-per-package': 'Units per package',
+  'package-cost-price': 'Package cost price',
+  'package-sell-price': 'Package sell price',
+};
 
 interface ProductModalProps {
   isOpen: boolean;
@@ -60,6 +75,7 @@ function ProductModalForm({
   const router = useRouter();
   const skuHelpRef = useRef<HTMLDivElement>(null);
   const skuHelpButtonRef = useRef<HTMLButtonElement>(null);
+  const errorSummaryRef = useRef<HTMLDivElement>(null);
   const [sku, setSku] = useState(product?.sku || '');
   const [isSkuHelpOpen, setIsSkuHelpOpen] = useState(false);
   const [barcodeRows, setBarcodeRows] = useState<BarcodeFormRow[]>(
@@ -98,10 +114,25 @@ function ProductModalForm({
   const [loading, setLoading] = useState(false);
   const [suggestingSku, setSuggestingSku] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<FormErrors>({});
 
   const isEdit = Boolean(product);
   const hasPackaging = Boolean(packageUnit && unitsPerPackage && Number(unitsPerPackage) > 0);
   const unitLabel = stockUnit.trim() || 'unit';
+
+  const updateField = (
+    id: string,
+    label: string,
+    value: string,
+    setter: (value: string) => void,
+    validation: Omit<FieldRule, 'id' | 'label' | 'value'> = {},
+  ) => {
+    setter(value);
+    setFieldErrors((current) =>
+      clearValidFieldError(current, id, { id, label, value, ...validation }),
+    );
+    setError(null);
+  };
 
   useEffect(() => {
     if (!isSkuHelpOpen) return;
@@ -153,6 +184,11 @@ function ProductModalForm({
         suffix += 1;
       }
       setSku(suggestedCode);
+      setFieldErrors((current) => {
+        const next = { ...current };
+        delete next['product-code'];
+        return next;
+      });
     } catch (suggestionError) {
       setError(
         suggestionError instanceof Error
@@ -186,21 +222,38 @@ function ProductModalForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
+    const errors = validateFields([
+      { id: 'product-code', label: 'Product code', value: sku, required: true },
+      { id: 'product-name', label: 'Name', value: name, required: true },
+      { id: 'cost-price', label: 'Cost price', value: costPrice, required: true, min: 0 },
+      { id: 'sell-price', label: 'Selling price', value: sellPrice, required: true, min: 0 },
+      { id: 'reorder-level', label: 'Reorder level', value: reorderLevel, required: true, min: 0, wholeNumber: true },
+      { id: 'stock-unit', label: 'Stock/sale unit', value: stockUnit, required: true },
+      ...(packageUnit ? [{ id: 'units-per-package', label: 'Units per package', value: unitsPerPackage, required: true, min: 1, wholeNumber: true }] : []),
+      ...(packageCostPrice ? [{ id: 'package-cost-price', label: 'Package cost price', value: packageCostPrice, min: 0 }] : []),
+      ...(packageSellPrice ? [{ id: 'package-sell-price', label: 'Package sell price', value: packageSellPrice, min: 0 }] : []),
+    ]);
+    setFieldErrors(errors);
+    if (Object.keys(errors).length > 0) {
+      focusFirstInvalid(errors);
+      return;
+    }
     setLoading(true);
     setError(null);
 
     try {
       // Send raw form values so the API remains the single source of truth for validation.
       const payload = {
-        sku,
-        name,
+        sku: sku.trim(),
+        name: name.trim(),
         cost_price: costPrice,
         sell_price: sellPrice,
         reorder_level: reorderLevel,
         category_id: categoryId || null,
         supplier_id: supplierId || null,
-        stock_unit: stockUnit,
-        package_unit: packageUnit || null,
+        stock_unit: stockUnit.trim(),
+        package_unit: packageUnit.trim() || null,
         units_per_package: unitsPerPackage || null,
         package_cost_price: packageCostPrice || null,
         package_sell_price: packageSellPrice || null,
@@ -227,7 +280,10 @@ function ProductModalForm({
       if (!response.ok) {
         const body = (await response.json().catch(() => null)) as { error?: string; code?: string } | null;
         if (body?.code === 'PRODUCT_SKU_CONFLICT') {
-          throw new Error('That product code is already used. Try a different one or tap Suggest a code.');
+          const message = 'That product code is already used. Try a different one or tap Suggest a code.';
+          setFieldErrors({ 'product-code': message });
+          focusFirstInvalid({ 'product-code': message });
+          return;
         }
         throw new Error(body?.error ?? 'An error occurred while saving the product');
       } else {
@@ -236,7 +292,9 @@ function ProductModalForm({
         onClose();
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred while saving the product');
+      const message = err instanceof Error ? err.message : 'An error occurred while saving the product';
+      setError(message);
+      window.setTimeout(() => errorSummaryRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 0);
     } finally {
       setLoading(false);
     }
@@ -285,18 +343,14 @@ function ProductModalForm({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 sm:px-8 py-6 space-y-4">
-          {error && (
-            <div className="p-3 text-sm text-warn-700 bg-warn-100 border border-warn-600/30 rounded-lg">
-              {error}
-            </div>
-          )}
-
-          <div>
-            <div className="mb-1 flex items-center gap-2">
-              <label htmlFor="product-code" className="text-sm font-medium text-ink-700">
-                Product code (SKU)
-              </label>
+        <form id="product-form" noValidate onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 sm:px-8 py-6 space-y-4">
+          <FormField
+            id="product-code"
+            label="Product code (SKU)"
+            required
+            hint="A short code you choose to identify this product, for example PVC-20 or RICE-5KG. Each product needs its own code."
+            error={fieldErrors['product-code']}
+            labelAddon={(
               <div className="relative" ref={skuHelpRef}>
                 <button
                   ref={skuHelpButtonRef}
@@ -320,14 +374,15 @@ function ProductModalForm({
                   </div>
                 )}
               </div>
-            </div>
-            <div className="flex flex-col gap-2 sm:flex-row">
+            )}
+          >
+            {(controlProps) => (
+              <div className="flex flex-col gap-2 sm:flex-row">
               <input
-                id="product-code"
+                {...controlProps}
                 type="text"
-                required
                 value={sku}
-                onChange={(e) => setSku(e.target.value)}
+                onChange={(e) => updateField('product-code', 'Product code', e.target.value, setSku, { required: true })}
                 className="w-full min-w-0 flex-1 rounded-lg border border-line bg-card px-3 py-2 text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
                 placeholder="e.g. PRD-001"
               />
@@ -339,11 +394,9 @@ function ProductModalForm({
               >
                 {suggestingSku ? 'Checking…' : 'Suggest a code'}
               </button>
-            </div>
-            <p className="mt-1 text-xs leading-5 text-ink-500">
-              A short code you choose to identify this product, for example PVC-20 or RICE-5KG. Each product needs its own code.
-            </p>
-          </div>
+              </div>
+            )}
+          </FormField>
 
           <div>
             <label className="block text-sm font-medium text-ink-700 mb-1">
@@ -406,19 +459,15 @@ function ProductModalForm({
             </button>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-ink-700 mb-1">
-              Name
-            </label>
+          <FormField id="product-name" label="Name" required error={fieldErrors['product-name']}>
             <input
               type="text"
-              required
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => updateField('product-name', 'Name', e.target.value, setName, { required: true })}
               className="w-full px-3 py-2 border border-line rounded-lg bg-card text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
               placeholder="Product Name"
             />
-          </div>
+          </FormField>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
@@ -481,62 +530,48 @@ function ProductModalForm({
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-ink-700 mb-1">
-                Cost Price (per {unitLabel})
-              </label>
+            <FormField id="cost-price" label={`Cost Price (per ${unitLabel})`} required error={fieldErrors['cost-price']}>
               <input
                 type="number"
                 step="0.01"
-                required
+                min="0"
                 value={costPrice}
-                onChange={(e) => setCostPrice(e.target.value)}
+                onChange={(e) => updateField('cost-price', 'Cost price', e.target.value, setCostPrice, { required: true, min: 0 })}
                 className="w-full px-3 py-2 border border-line rounded-lg bg-card text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
               />
-            </div>
+            </FormField>
 
-            <div>
-              <label className="block text-sm font-medium text-ink-700 mb-1">
-                Sell Price (per {unitLabel})
-              </label>
+            <FormField id="sell-price" label={`Sell Price (per ${unitLabel})`} required error={fieldErrors['sell-price']}>
               <input
                 type="number"
                 step="0.01"
-                required
+                min="0"
                 value={sellPrice}
-                onChange={(e) => setSellPrice(e.target.value)}
+                onChange={(e) => updateField('sell-price', 'Selling price', e.target.value, setSellPrice, { required: true, min: 0 })}
                 className="w-full px-3 py-2 border border-line rounded-lg bg-card text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
               />
-            </div>
+            </FormField>
 
-            <div>
-              <label className="block text-sm font-medium text-ink-700 mb-1">
-                Reorder Level
-              </label>
+            <FormField id="reorder-level" label="Reorder Level" required error={fieldErrors['reorder-level']}>
               <input
                 type="number"
-                required
                 value={reorderLevel}
-                onChange={(e) => setReorderLevel(e.target.value)}
+                onChange={(e) => updateField('reorder-level', 'Reorder level', e.target.value, setReorderLevel, { required: true, min: 0, wholeNumber: true })}
                 className="w-full px-3 py-2 border border-line rounded-lg bg-card text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
               />
-            </div>
+            </FormField>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-line pt-4 mt-4">
-            <div>
-              <label className="block text-sm font-medium text-ink-700 mb-1">
-                Stock/Sale Unit
-              </label>
+            <FormField id="stock-unit" label="Stock/Sale Unit" required error={fieldErrors['stock-unit']}>
               <input
                 type="text"
-                required
                 value={stockUnit}
-                onChange={(e) => setStockUnit(e.target.value)}
+                onChange={(e) => updateField('stock-unit', 'Stock/sale unit', e.target.value, setStockUnit, { required: true })}
                 className="w-full px-3 py-2 border border-line rounded-lg bg-card text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
                 placeholder="e.g. packet, piece, bottle"
               />
-            </div>
+            </FormField>
             
             <div>
               <label className="block text-sm font-medium text-ink-700 mb-1">
@@ -545,27 +580,35 @@ function ProductModalForm({
               <input
                 type="text"
                 value={packageUnit}
-                onChange={(e) => setPackageUnit(e.target.value)}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setPackageUnit(value);
+                  if (!value.trim()) {
+                    setFieldErrors((current) => {
+                      const next = { ...current };
+                      delete next['units-per-package'];
+                      delete next['package-cost-price'];
+                      delete next['package-sell-price'];
+                      return next;
+                    });
+                  }
+                }}
                 className="w-full px-3 py-2 border border-line rounded-lg bg-card text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
                 placeholder="e.g. bale, carton"
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-ink-700 mb-1">
-                Units per package
-              </label>
+            <FormField id="units-per-package" label="Units per package" required={!!packageUnit} error={fieldErrors['units-per-package']}>
               <input
                 type="number"
                 min="1"
-                required={!!packageUnit}
                 value={unitsPerPackage}
-                onChange={(e) => setUnitsPerPackage(e.target.value)}
+                onChange={(e) => updateField('units-per-package', 'Units per package', e.target.value, setUnitsPerPackage, { required: !!packageUnit, min: 1, wholeNumber: true })}
                 className="w-full px-3 py-2 border border-line rounded-lg bg-card text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
                 placeholder={packageUnit ? "e.g. 20" : ""}
                 disabled={!packageUnit}
               />
-            </div>
+            </FormField>
           </div>
           
           {packageUnit && unitsPerPackage && (
@@ -581,33 +624,27 @@ function ProductModalForm({
               </h3>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-ink-700 mb-1">
-                    Cost Price (per {packageUnit})
-                  </label>
+                <FormField id="package-cost-price" label={`Cost Price (per ${packageUnit})`} error={fieldErrors['package-cost-price']}>
                   <input
                     type="number"
                     step="0.01"
                     min="0"
                     value={packageCostPrice}
-                    onChange={(e) => setPackageCostPrice(e.target.value)}
+                    onChange={(e) => updateField('package-cost-price', 'Package cost price', e.target.value, setPackageCostPrice, { min: 0 })}
                     className="w-full px-3 py-2 border border-line rounded-lg bg-card text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
                   />
-                </div>
+                </FormField>
 
-                <div>
-                  <label className="block text-sm font-medium text-ink-700 mb-1">
-                    Sell Price (per {packageUnit})
-                  </label>
+                <FormField id="package-sell-price" label={`Sell Price (per ${packageUnit})`} error={fieldErrors['package-sell-price']}>
                   <input
                     type="number"
                     step="0.01"
                     min="0"
                     value={packageSellPrice}
-                    onChange={(e) => setPackageSellPrice(e.target.value)}
+                    onChange={(e) => updateField('package-sell-price', 'Package sell price', e.target.value, setPackageSellPrice, { min: 0 })}
                     className="w-full px-3 py-2 border border-line rounded-lg bg-card text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
                   />
-                </div>
+                </FormField>
               </div>
 
               {packageSellPrice &&
@@ -626,7 +663,9 @@ function ProductModalForm({
           )}
         </form>
 
-        <div className="flex items-center justify-end gap-3 border-t border-line px-6 sm:px-8 py-4 shrink-0">
+        <div ref={errorSummaryRef} className="sticky bottom-0 z-10 shrink-0 border-t border-line bg-panel px-6 py-4 sm:px-8">
+          <FormErrorSummary errors={fieldErrors} labels={FIELD_LABELS} serverError={error} />
+          <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
           {isEdit && (
             <button
               type="button"
@@ -648,13 +687,14 @@ function ProductModalForm({
           </button>
 
           <button
-            type="button"
-            onClick={handleSubmit}
+            type="submit"
+            form="product-form"
             disabled={loading}
             className="min-h-[44px] px-4 py-2 text-sm font-medium text-white bg-accent-500 hover:bg-accent-600 rounded-lg transition-colors shadow-sm"
           >
             {loading ? 'Saving...' : isEdit ? 'Save Changes' : 'Create Product'}
           </button>
+          </div>
         </div>
       </div>
     </div>

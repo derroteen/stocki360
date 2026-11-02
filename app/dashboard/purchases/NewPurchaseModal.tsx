@@ -1,8 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import Link from 'next/link';
 import { Supplier, ProductStockLevel, CreatePurchaseItemPayload } from '@/lib/supabase/types';
+import FormField from '@/components/forms/FormField';
+import FormErrorSummary from '@/components/forms/FormErrorSummary';
+import { clearValidFieldError, focusFirstInvalid, validateFields, type FieldRule, type FormErrors } from '@/components/forms/validation';
 
 interface NewPurchaseModalProps {
   isOpen: boolean;
@@ -105,6 +108,8 @@ function NewPurchaseForm({
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<FormErrors>({});
+  const submittingRef = useRef(false);
 
   const getProduct = (productId: string) => products.find((p) => p.id === productId) || null;
 
@@ -115,6 +120,9 @@ function NewPurchaseForm({
 
   const handleProductChange = (index: number, newProductId: string) => {
     const selectedProd = getProduct(newProductId);
+    setFieldErrors((current) =>
+      Object.fromEntries(Object.entries(current).filter(([id]) => !id.startsWith(`purchase-item-${index}-`))),
+    );
     setItems((prev) => {
       const updated = [...prev];
       updated[index] = {
@@ -132,6 +140,9 @@ function NewPurchaseForm({
   };
 
   const handleEntryModeChange = (index: number, mode: 'individual' | 'package') => {
+    setFieldErrors((current) =>
+      Object.fromEntries(Object.entries(current).filter(([id]) => !id.startsWith(`purchase-item-${index}-`))),
+    );
     setItems((prev) => {
       const updated = [...prev];
       updated[index] = {
@@ -184,6 +195,9 @@ function NewPurchaseForm({
   const handleRemoveItem = (index: number) => {
     if (items.length <= 1) return;
     setItems((prev) => prev.filter((_, i) => i !== index));
+    setFieldErrors((current) =>
+      Object.fromEntries(Object.entries(current).filter(([id]) => !id.startsWith('purchase-item-'))),
+    );
   };
 
   const lineTotals = items.map((item) => {
@@ -207,45 +221,76 @@ function NewPurchaseForm({
     }).format(val);
   };
 
+  const fieldLabels: Record<string, string> = {
+    'purchase-date': 'Purchase date',
+    ...Object.fromEntries(items.flatMap((_, index) => [
+      [`purchase-item-${index}-product`, `Item ${index + 1} product`],
+      [`purchase-item-${index}-quantity`, `Item ${index + 1} quantity`],
+      [`purchase-item-${index}-cost`, `Item ${index + 1} unit cost`],
+      [`purchase-item-${index}-package-quantity`, `Item ${index + 1} package quantity`],
+      [`purchase-item-${index}-package-cost`, `Item ${index + 1} package cost`],
+    ])),
+  };
+
+  const validatePurchaseForm = (): FormErrors => {
+    const errors = validateFields([
+      { id: 'purchase-date', label: 'Purchase date', value: purchaseDate, required: true },
+    ]);
+    const seen = new Set<string>();
+    items.forEach((item, index) => {
+      const productId = `purchase-item-${index}-product`;
+      if (!item.productId) {
+        errors[productId] = `Item ${index + 1} product is required`;
+      } else if (seen.has(item.productId)) {
+        errors[productId] = 'Choose a different product or combine its quantity into one line';
+      }
+      seen.add(item.productId);
+      if (item.entryMode === 'package') {
+        if (item.productId && !productHasPackaging(item.productId)) {
+          errors[productId] = 'This product has no bulk packaging configured';
+        }
+        Object.assign(errors, validateFields([
+          { id: `purchase-item-${index}-package-quantity`, label: `Item ${index + 1} package quantity`, value: item.packageQuantity, required: true, min: 1, wholeNumber: true },
+          { id: `purchase-item-${index}-package-cost`, label: `Item ${index + 1} package cost`, value: item.packageUnitCost, required: true, min: 0 },
+        ]));
+      } else {
+        Object.assign(errors, validateFields([
+          { id: `purchase-item-${index}-quantity`, label: `Item ${index + 1} quantity`, value: item.quantity, required: true, min: 1, wholeNumber: true },
+          { id: `purchase-item-${index}-cost`, label: `Item ${index + 1} unit cost`, value: item.unitCost, required: true, min: 0 },
+        ]));
+      }
+    });
+    return errors;
+  };
+
+  const clearPurchaseFieldError = (rule: FieldRule) => {
+    setFieldErrors((current) => clearValidFieldError(current, rule.id, rule));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submittingRef.current) return;
     setError(null);
+    const errors = validatePurchaseForm();
+    setFieldErrors(errors);
+    if (Object.keys(errors).length > 0) {
+      focusFirstInvalid(errors);
+      return;
+    }
 
     const seen = new Set<string>();
     const payloadItems: CreatePurchaseItemPayload[] = [];
 
     for (let i = 0; i < items.length; i++) {
       const it = items[i];
-      if (!it.productId) {
-        setError(`Please select a product for item #${i + 1}.`);
-        return;
-      }
       if (seen.has(it.productId)) {
-        const prod = getProduct(it.productId);
-        setError(
-          `Product "${prod?.name ?? 'selected'}" is added more than once. Combine the quantity into a single line.`
-        );
-        return;
+        continue;
       }
       seen.add(it.productId);
 
       if (it.entryMode === 'package') {
-        if (!productHasPackaging(it.productId)) {
-          setError(`Item #${i + 1}: This product has no bulk packaging configured.`);
-          return;
-        }
-
         const pkgQty = parseInt(it.packageQuantity, 10);
-        if (!pkgQty || pkgQty <= 0) {
-          setError(`Item #${i + 1}: Package quantity must be at least 1.`);
-          return;
-        }
-
         const pkgCost = parseFloat(it.packageUnitCost);
-        if (isNaN(pkgCost) || pkgCost < 0) {
-          setError(`Item #${i + 1}: Please provide a valid cost per package.`);
-          return;
-        }
 
         payloadItems.push({
           productId: it.productId,
@@ -255,16 +300,7 @@ function NewPurchaseForm({
         });
       } else {
         const qty = parseInt(it.quantity, 10);
-        if (!qty || qty <= 0) {
-          setError(`Item #${i + 1}: Quantity must be at least 1.`);
-          return;
-        }
-
         const cost = parseFloat(it.unitCost);
-        if (isNaN(cost) || cost < 0) {
-          setError(`Item #${i + 1}: Please provide a valid unit cost.`);
-          return;
-        }
 
         payloadItems.push({
           productId: it.productId,
@@ -275,6 +311,7 @@ function NewPurchaseForm({
       }
     }
 
+    submittingRef.current = true;
     setIsSubmitting(true);
 
     try {
@@ -300,7 +337,9 @@ function NewPurchaseForm({
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred while saving the purchase.');
+      document.getElementById('purchase-error-summary')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     } finally {
+      submittingRef.current = false;
       setIsSubmitting(false);
     }
   };
@@ -338,12 +377,7 @@ function NewPurchaseForm({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">
-          {error && (
-            <div className="p-3 text-sm text-warn-700 bg-warn-50 border border-warn-200 rounded-lg">
-              {error}
-            </div>
-          )}
+        <form id="purchase-form" noValidate onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
@@ -380,17 +414,17 @@ function NewPurchaseForm({
             </div>
 
             <div>
-              <label htmlFor="purchase-date" className="block text-xs font-semibold text-ink-700 mb-1.5">
-                Purchase Date
-              </label>
-              <input
-                id="purchase-date"
+              <FormField id="purchase-date" label="Purchase Date" required error={fieldErrors['purchase-date']}>
+                <input
                 type="date"
-                required
                 value={purchaseDate}
-                onChange={(e) => setPurchaseDate(e.target.value)}
+                onChange={(e) => {
+                  setPurchaseDate(e.target.value);
+                  clearPurchaseFieldError({ id: 'purchase-date', label: 'Purchase date', value: e.target.value, required: true });
+                }}
                 className="w-full px-3 py-2 border border-line-strong rounded-lg text-sm focus:ring-2 focus:ring-accent-500 focus:border-accent-500 min-h-[44px] bg-card"
               />
+              </FormField>
             </div>
           </div>
 
@@ -416,13 +450,14 @@ function NewPurchaseForm({
                   >
                     <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end">
                       <div className="sm:col-span-5">
-                        <label className="block text-xs font-medium text-ink-600 mb-1">
-                          Product *
-                        </label>
+                        <FormField id={`purchase-item-${index}-product`} label="Product" required error={fieldErrors[`purchase-item-${index}-product`]}>
                         <select
+                          id={`purchase-item-${index}-product`}
                           value={item.productId}
-                          onChange={(e) => handleProductChange(index, e.target.value)}
-                          required
+                          onChange={(e) => {
+                            handleProductChange(index, e.target.value);
+                            clearPurchaseFieldError({ id: `purchase-item-${index}-product`, label: `Item ${index + 1} product`, value: e.target.value, required: true });
+                          }}
                           className="w-full px-3 py-2 border border-line-strong rounded-lg text-sm bg-card min-h-[44px]"
                         >
                           <option value="">Select product...</option>
@@ -432,40 +467,43 @@ function NewPurchaseForm({
                             </option>
                           ))}
                         </select>
+                        </FormField>
                       </div>
 
                       {item.entryMode === 'individual' && (
                         <>
                           <div className="sm:col-span-2">
-                            <label className="block text-xs font-medium text-ink-600 mb-1">
-                              Qty *
-                            </label>
+                            <FormField id={`purchase-item-${index}-quantity`} label="Qty" required error={fieldErrors[`purchase-item-${index}-quantity`]}>
                             <input
                               type="number"
                               min="1"
                               step="1"
-                              required
                               value={item.quantity}
-                              onChange={(e) => handleQuantityChange(index, e.target.value)}
+                              onChange={(e) => {
+                                handleQuantityChange(index, e.target.value);
+                                clearPurchaseFieldError({ id: `purchase-item-${index}-quantity`, label: `Item ${index + 1} quantity`, value: e.target.value, required: true, min: 1, wholeNumber: true });
+                              }}
                               placeholder="1"
                               className="w-full px-3 py-2 border border-line-strong rounded-lg text-sm bg-card min-h-[44px]"
                             />
+                            </FormField>
                           </div>
 
                           <div className="sm:col-span-2">
-                            <label className="block text-xs font-medium text-ink-600 mb-1">
-                              Unit Cost (KES) *
-                            </label>
+                            <FormField id={`purchase-item-${index}-cost`} label="Unit Cost (KES)" required error={fieldErrors[`purchase-item-${index}-cost`]}>
                             <input
                               type="number"
                               min="0"
                               step="0.01"
-                              required
                               value={item.unitCost}
-                              onChange={(e) => handleUnitCostChange(index, e.target.value)}
+                              onChange={(e) => {
+                                handleUnitCostChange(index, e.target.value);
+                                clearPurchaseFieldError({ id: `purchase-item-${index}-cost`, label: `Item ${index + 1} unit cost`, value: e.target.value, required: true, min: 0 });
+                              }}
                               placeholder="0.00"
                               className="w-full px-3 py-2 border border-line-strong rounded-lg text-sm bg-card min-h-[44px]"
                             />
+                            </FormField>
                           </div>
                         </>
                       )}
@@ -473,35 +511,37 @@ function NewPurchaseForm({
                       {item.entryMode === 'package' && (
                         <>
                           <div className="sm:col-span-2">
-                            <label className="block text-xs font-medium text-ink-600 mb-1">
-                              Qty ({selectedProduct?.package_unit}s) *
-                            </label>
+                            <FormField id={`purchase-item-${index}-package-quantity`} label={`Qty (${selectedProduct?.package_unit}s)`} required error={fieldErrors[`purchase-item-${index}-package-quantity`]}>
                             <input
                               type="number"
                               min="1"
                               step="1"
-                              required
                               value={item.packageQuantity}
-                              onChange={(e) => handlePackageQuantityChange(index, e.target.value)}
+                              onChange={(e) => {
+                                handlePackageQuantityChange(index, e.target.value);
+                                clearPurchaseFieldError({ id: `purchase-item-${index}-package-quantity`, label: `Item ${index + 1} package quantity`, value: e.target.value, required: true, min: 1, wholeNumber: true });
+                              }}
                               placeholder="1"
                               className="w-full px-3 py-2 border border-line-strong rounded-lg text-sm bg-card min-h-[44px]"
                             />
+                            </FormField>
                           </div>
 
                           <div className="sm:col-span-2">
-                            <label className="block text-xs font-medium text-ink-600 mb-1">
-                              Cost / {selectedProduct?.package_unit} (KES) *
-                            </label>
+                            <FormField id={`purchase-item-${index}-package-cost`} label={`Cost / ${selectedProduct?.package_unit} (KES)`} required error={fieldErrors[`purchase-item-${index}-package-cost`]}>
                             <input
                               type="number"
                               min="0"
                               step="0.01"
-                              required
                               value={item.packageUnitCost}
-                              onChange={(e) => handlePackageUnitCostChange(index, e.target.value)}
+                              onChange={(e) => {
+                                handlePackageUnitCostChange(index, e.target.value);
+                                clearPurchaseFieldError({ id: `purchase-item-${index}-package-cost`, label: `Item ${index + 1} package cost`, value: e.target.value, required: true, min: 0 });
+                              }}
                               placeholder="0.00"
                               className="w-full px-3 py-2 border border-line-strong rounded-lg text-sm bg-card min-h-[44px]"
                             />
+                            </FormField>
                           </div>
                         </>
                       )}
@@ -621,7 +661,9 @@ function NewPurchaseForm({
           </div>
         </form>
 
-        <div className="px-6 py-4 border-t border-line-subtle bg-subtle flex items-center justify-end gap-3 rounded-b-2xl">
+        <div id="purchase-error-summary" className="sticky bottom-0 z-10 shrink-0 border-t border-line-subtle bg-subtle px-6 py-4">
+          <FormErrorSummary errors={fieldErrors} labels={fieldLabels} serverError={error} />
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-3">
           <button
             type="button"
             onClick={onClose}
@@ -631,13 +673,14 @@ function NewPurchaseForm({
             Cancel
           </button>
           <button
-            type="button"
-            onClick={handleSubmit}
+            type="submit"
+            form="purchase-form"
             disabled={isSubmitting || items.length === 0}
             className="min-h-[44px] px-5 py-2 text-sm font-medium text-white bg-accent-600 hover:bg-accent-700 border border-transparent rounded-lg transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer"
           >
             {isSubmitting ? 'Recording Purchase...' : 'Complete & Receive Stock'}
           </button>
+          </div>
         </div>
       </div>
     </div>

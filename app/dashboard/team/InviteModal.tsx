@@ -1,8 +1,13 @@
 'use client';
 
-import { FormEvent, useState } from 'react';
+import { FormEvent, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
+import FormField from '@/components/forms/FormField';
+import FormErrorSummary from '@/components/forms/FormErrorSummary';
+import { clearValidFieldError, focusFirstInvalid, validateFields, type FormErrors } from '@/components/forms/validation';
+
+const FIELD_LABELS = { 'invite-email': 'Email', 'invite-role': 'Role' };
 
 interface InviteModalProps {
   businessId: string;
@@ -17,36 +22,60 @@ export default function InviteModal({ businessId }: InviteModalProps) {
   const [role, setRole] = useState<InviteRole>('storekeeper');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<FormErrors>({});
+  const submittingRef = useRef(false);
   const supabase = createSupabaseBrowserClient();
 
   const close = () => {
     if (isSubmitting) return;
     setIsOpen(false);
     setError(null);
+    setFieldErrors({});
     setEmail('');
     setRole('storekeeper');
   };
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
-    setError(null);
-    setIsSubmitting(true);
-
-    const { error: invitationError } = await supabase.rpc('create_business_invitation', {
-      p_business_id: businessId,
-      p_email: email.trim(),
-      p_role: role,
-    });
-
-    if (invitationError) {
-      setError(invitationError.message || 'Unable to send invitation.');
-      setIsSubmitting(false);
+    if (submittingRef.current) return;
+    const errors = validateFields([
+      { id: 'invite-email', label: 'Email', value: email, required: true, pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/ },
+      { id: 'invite-role', label: 'Role', value: role, required: true },
+    ]);
+    setFieldErrors(errors);
+    if (Object.keys(errors).length > 0) {
+      focusFirstInvalid(errors);
       return;
     }
+    setError(null);
+    submittingRef.current = true;
+    setIsSubmitting(true);
 
-    close();
-    router.refresh();
-    setIsSubmitting(false);
+    try {
+      const { error: invitationError } = await supabase.rpc('create_business_invitation', {
+        p_business_id: businessId,
+        p_email: email.trim(),
+        p_role: role,
+      });
+
+      if (invitationError) {
+        setError(invitationError.message || 'Unable to send invitation.');
+        document.getElementById('invite-error-summary')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        return;
+      }
+
+      setIsOpen(false);
+      setFieldErrors({});
+      setEmail('');
+      setRole('storekeeper');
+      router.refresh();
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : 'Unable to send invitation.');
+      document.getElementById('invite-error-summary')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    } finally {
+      setIsSubmitting(false);
+      submittingRef.current = false;
+    }
   };
 
   return (
@@ -55,6 +84,7 @@ export default function InviteModal({ businessId }: InviteModalProps) {
         type="button"
         onClick={() => {
           setError(null);
+          setFieldErrors({});
           setIsOpen(true);
         }}
         className="min-h-[44px] rounded-lg bg-accent-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-accent-700"
@@ -64,7 +94,7 @@ export default function InviteModal({ businessId }: InviteModalProps) {
 
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink-900/50 p-4 backdrop-blur-xs">
-          <div className="w-full max-w-md rounded-xl border border-line bg-card p-6 shadow-xl">
+          <div className="flex max-h-[90dvh] w-full max-w-md flex-col overflow-hidden rounded-xl border border-line bg-card p-6 shadow-xl">
             <div className="mb-5 flex items-start justify-between gap-4">
               <div>
                 <h2 className="text-xl font-bold font-serif text-ink-900">Invite member</h2>
@@ -75,37 +105,43 @@ export default function InviteModal({ businessId }: InviteModalProps) {
               </button>
             </div>
 
-            {error && <p className="mb-4 rounded-lg border border-warn-200 bg-warn-50 p-3 text-sm text-warn-700">{error}</p>}
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label htmlFor="invite-email" className="mb-1 block text-sm font-medium text-ink-700">Email</label>
+            <form id="invite-form" noValidate onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+              <div className="min-h-0 flex-1 space-y-4 overflow-y-auto py-1">
+              <FormField id="invite-email" label="Email" required error={fieldErrors['invite-email']}>
                 <input
-                  id="invite-email"
                   type="email"
-                  required
                   value={email}
-                  onChange={(event) => setEmail(event.target.value)}
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    setEmail(value);
+                    setFieldErrors((current) => clearValidFieldError(current, 'invite-email', { id: 'invite-email', label: 'Email', value, required: true, pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/ }));
+                  }}
                   className="min-h-[44px] w-full rounded-lg border border-line-strong px-3 py-2 text-ink-900 focus:border-accent-500 focus:outline-none focus:ring-2 focus:ring-accent-500"
                   placeholder="teammate@example.com"
                 />
-              </div>
-              <div>
-                <label htmlFor="invite-role" className="mb-1 block text-sm font-medium text-ink-700">Role</label>
+              </FormField>
+              <FormField id="invite-role" label="Role" required error={fieldErrors['invite-role']}>
                 <select
-                  id="invite-role"
                   value={role}
-                  onChange={(event) => setRole(event.target.value as InviteRole)}
+                  onChange={(event) => {
+                    const value = event.target.value as InviteRole;
+                    setRole(value);
+                    setFieldErrors((current) => clearValidFieldError(current, 'invite-role', { id: 'invite-role', label: 'Role', value, required: true }));
+                  }}
                   className="min-h-[44px] w-full rounded-lg border border-line-strong bg-card px-3 py-2 text-ink-900 focus:border-accent-500 focus:outline-none focus:ring-2 focus:ring-accent-500"
                 >
                   <option value="admin">Admin</option>
                   <option value="storekeeper">Storekeeper</option>
                   <option value="cashier">Cashier</option>
                 </select>
+              </FormField>
               </div>
-              <div className="flex justify-end gap-3 border-t border-line pt-4">
+              <div id="invite-error-summary" className="sticky bottom-0 mt-4 border-t border-line bg-card pt-3">
+                <FormErrorSummary errors={fieldErrors} labels={FIELD_LABELS} serverError={error} />
+                <div className="flex justify-end gap-3">
                 <button type="button" onClick={close} disabled={isSubmitting} className="min-h-[44px] rounded-lg bg-subtle-strong px-4 py-2 text-sm font-medium text-ink-700 hover:bg-subtle-active disabled:opacity-50">Cancel</button>
-                <button type="submit" disabled={isSubmitting} className="min-h-[44px] rounded-lg bg-accent-600 px-4 py-2 text-sm font-semibold text-white hover:bg-accent-700 disabled:opacity-50">{isSubmitting ? 'Sending...' : 'Send invite'}</button>
+                <button type="submit" form="invite-form" disabled={isSubmitting} className="min-h-[44px] rounded-lg bg-accent-600 px-4 py-2 text-sm font-semibold text-white hover:bg-accent-700 disabled:opacity-50">{isSubmitting ? 'Sending...' : 'Send invite'}</button>
+                </div>
               </div>
             </form>
           </div>

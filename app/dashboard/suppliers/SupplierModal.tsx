@@ -1,7 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Supplier } from '@/lib/supabase/types';
+import FormField from '@/components/forms/FormField';
+import FormErrorSummary from '@/components/forms/FormErrorSummary';
+import { clearValidFieldError, focusFirstInvalid, validateFields, type FormErrors } from '@/components/forms/validation';
+
+const FIELD_LABELS = { 'supplier-name': 'Supplier name', email: 'Email' };
 
 interface SupplierModalProps {
   isOpen: boolean;
@@ -35,6 +40,9 @@ function SupplierModalForm({
 }: Omit<SupplierModalProps, 'isOpen'>) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<FormErrors>({});
+  const submittingRef = useRef(false);
+  const summaryRef = useRef<HTMLDivElement>(null);
 
   const [name, setName] = useState(supplier?.name ?? '');
   const [contactPerson, setContactPerson] = useState(supplier?.contact_person ?? '');
@@ -47,17 +55,28 @@ function SupplierModalForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submittingRef.current) return;
+    const errors = validateFields([
+      { id: 'supplier-name', label: 'Supplier name', value: name, required: true },
+      { id: 'email', label: 'Email', value: email, pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/ },
+    ]);
+    setFieldErrors(errors);
+    if (Object.keys(errors).length > 0) {
+      focusFirstInvalid(errors);
+      return;
+    }
     setError(null);
+    submittingRef.current = true;
     setIsSubmitting(true);
 
     try {
       const payload = {
-        name,
-        contact_person: contactPerson,
-        phone,
-        email,
-        address,
-        notes,
+        name: name.trim(),
+        contact_person: contactPerson.trim(),
+        phone: phone.trim(),
+        email: email.trim(),
+        address: address.trim(),
+        notes: notes.trim(),
       };
 
       const url = isEditing ? `/api/suppliers/${supplier.id}` : '/api/suppliers';
@@ -78,7 +97,9 @@ function SupplierModalForm({
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred. Please try again.');
+      window.setTimeout(() => summaryRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 0);
     } finally {
+      submittingRef.current = false;
       setIsSubmitting(false);
     }
   };
@@ -110,27 +131,26 @@ function SupplierModalForm({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-5">
-          {error && (
-            <div className="p-3 text-sm text-warn-700 bg-warn-50 border border-warn-200 rounded-lg">
-              {error}
-            </div>
-          )}
-
-          <div>
-            <label htmlFor="supplier-name" className="block text-sm font-semibold text-ink-700 mb-1.5">
-              Supplier name *
-            </label>
+        <form id="supplier-form" noValidate onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-5">
+          <FormField id="supplier-name" label="Supplier name" required error={fieldErrors['supplier-name']}>
             <input
-              id="supplier-name"
               type="text"
-              required
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => {
+                const value = e.target.value;
+                setName(value);
+                if (value.trim()) {
+                  setFieldErrors((current) => {
+                    const next = { ...current };
+                    delete next['supplier-name'];
+                    return next;
+                  });
+                }
+              }}
               placeholder="e.g. Acme Corp"
               className="w-full px-3 py-2 border border-line-strong rounded-lg shadow-xs focus:outline-hidden focus:ring-2 focus:ring-accent-500/20 focus:border-accent-500 transition-colors sm:text-sm text-base min-h-[44px]"
             />
-          </div>
+          </FormField>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
@@ -161,19 +181,19 @@ function SupplierModalForm({
             </div>
           </div>
 
-          <div>
-            <label htmlFor="email" className="block text-sm font-semibold text-ink-700 mb-1.5">
-              Email
-            </label>
+          <FormField id="email" label="Email" error={fieldErrors.email}>
             <input
-              id="email"
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                const value = e.target.value;
+                setEmail(value);
+                setFieldErrors((current) => clearValidFieldError(current, 'email', { id: 'email', label: 'Email', value, pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/ }));
+              }}
               placeholder="supplier@example.com"
               className="w-full px-3 py-2 border border-line-strong rounded-lg shadow-xs focus:outline-hidden focus:ring-2 focus:ring-accent-500/20 focus:border-accent-500 transition-colors sm:text-sm text-base min-h-[44px]"
             />
-          </div>
+          </FormField>
 
           <div>
             <label htmlFor="address" className="block text-sm font-semibold text-ink-700 mb-1.5">
@@ -202,7 +222,9 @@ function SupplierModalForm({
           </div>
         </form>
 
-        <div className="px-6 py-4 border-t border-line-subtle bg-subtle flex items-center justify-end gap-3 rounded-b-2xl">
+        <div ref={summaryRef} className="sticky bottom-0 z-10 border-t border-line-subtle bg-subtle px-6 py-4">
+          <FormErrorSummary errors={fieldErrors} labels={FIELD_LABELS} serverError={error} />
+          <div className="flex flex-wrap items-center justify-end gap-3">
           <button
             type="button"
             onClick={onClose}
@@ -213,12 +235,13 @@ function SupplierModalForm({
           </button>
           <button
             type="submit"
-            disabled={isSubmitting || !name.trim()}
-            onClick={handleSubmit}
+            form="supplier-form"
+            disabled={isSubmitting}
             className="min-h-[44px] px-5 py-2 text-sm font-medium text-white bg-accent-600 hover:bg-accent-700 border border-transparent rounded-lg transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSubmitting ? 'Saving...' : 'Save Supplier'}
           </button>
+          </div>
         </div>
       </div>
     </div>
