@@ -4,8 +4,9 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ProductStockLevel, Category, Supplier, ProductBarcode } from '@/lib/supabase/types';
+import type { BusinessRole } from '@/lib/supabase/business-context';
 import { getStockStatus, prioritizeLowStockProducts } from '@/lib/stock-alerts';
-import StockMovementModal from '../StockMovementModal';
+import AdjustStockModal from '../AdjustStockModal';
 import ProductModal from '../ProductModal';
 
 interface LowStockTableProps {
@@ -15,6 +16,7 @@ interface LowStockTableProps {
   activeCategories: Category[];
   activeSuppliers: Supplier[];
   barcodes: ProductBarcode[];
+  role: BusinessRole;
 }
 
 type AlertFilter = 'all' | 'out_of_stock' | 'low_stock';
@@ -26,6 +28,7 @@ export default function LowStockTable({
   activeCategories,
   activeSuppliers,
   barcodes,
+  role,
 }: LowStockTableProps) {
   const router = useRouter();
   const [filter, setFilter] = useState<AlertFilter>('all');
@@ -232,7 +235,7 @@ export default function LowStockTable({
                           }}
                           className="min-h-[44px] px-3 py-1.5 text-xs font-medium text-accent-text bg-accent-50 hover:bg-accent-100 border border-accent-100 rounded-lg transition-colors inline-flex items-center gap-1 cursor-pointer"
                         >
-                          Record movement
+                          Adjust stock
                         </button>
                       </td>
                     </tr>
@@ -298,7 +301,7 @@ export default function LowStockTable({
                         }}
                         className="min-h-[44px] px-3 py-1.5 text-xs font-medium text-accent-text bg-accent-50 hover:bg-accent-100 border border-accent-100 rounded-lg transition-colors cursor-pointer"
                       >
-                        Record movement
+                        Adjust stock
                       </button>
                     </div>
                   </div>
@@ -311,8 +314,9 @@ export default function LowStockTable({
 
       {/* Stock Movement Modal */}
       {movementProduct && (
-        <StockMovementModal
+        <AdjustStockModal
           product={movementProduct}
+          role={role}
           onClose={() => setMovementProduct(null)}
           onSaved={() => {
             setMovementProduct(null);
@@ -333,6 +337,7 @@ export default function LowStockTable({
         }}
         categories={activeCategories}
         suppliers={activeSuppliers}
+        role={role}
       />
     </div>
   );

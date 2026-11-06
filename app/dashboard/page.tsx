@@ -4,7 +4,10 @@ import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { ProductStockLevel } from '@/lib/supabase/types';
 import OverviewChart from './OverviewChart';
 import { getActiveBusinessResolution } from '@/lib/supabase/business-context';
+import { MANUAL_ADJUSTMENT_ROLES } from '@/lib/supabase/stock-roles';
 import { getStockStatus, prioritizeLowStockProducts } from '@/lib/stock-alerts';
+import { getStockReportDates, getStockReportTimestamps } from '@/lib/stock-report';
+import type { StockReconciliationRow } from '@/lib/supabase/types';
 import SetupChecklist from './SetupChecklist';
 import type { SetupProgress } from './SetupChecklist';
 
@@ -47,8 +50,7 @@ async function getSetupProgress(
     supabase
       .from('stock_movements')
       .select('id,products!inner(business_id)', { count: 'exact', head: true })
-      .eq('products.business_id', businessId)
-      .in('movement_type', ['in', 'adjustment']),
+      .eq('products.business_id', businessId),
     supabase
       .from('sales')
       .select('id', { count: 'exact', head: true })
@@ -122,6 +124,30 @@ export default async function DashboardOverviewPage() {
 
   const activeBusinessId = resolution.context.businessId;
   const setupProgress = await getSetupProgress(supabase, activeBusinessId);
+  let manualStockSummary: { units: number; cost: number } | null = null;
+  if (MANUAL_ADJUSTMENT_ROLES.includes(resolution.context.role)) {
+    const dates = getStockReportDates('last_30_days');
+    const timestamps = getStockReportTimestamps(dates);
+    try {
+      const { data, error } = await supabase.rpc('stock_reconciliation', {
+        p_business_id: activeBusinessId,
+        p_from: timestamps.from,
+        p_to: timestamps.to,
+      });
+
+      if (error) {
+        console.error('Unable to load manual stock changes for dashboard:', error);
+      } else {
+        const rows = (data ?? []) as StockReconciliationRow[];
+        manualStockSummary = {
+          units: rows.reduce((total, row) => total + Number(row.write_offs ?? 0) + Math.abs(Number(row.count_corrections ?? 0)), 0),
+          cost: rows.reduce((total, row) => total + Number(row.write_off_cost ?? 0) + Math.abs(Number(row.count_correction_cost ?? 0)), 0),
+        };
+      }
+    } catch (summaryError) {
+      console.error('Unable to load manual stock changes for dashboard:', summaryError);
+    }
+  }
 
   let products: ProductStockLevel[] = [];
 
@@ -173,6 +199,9 @@ export default async function DashboardOverviewPage() {
     currency: 'KES',
     maximumFractionDigits: 0,
   }).format(totalStockValue);
+  const formattedManualStockCost = manualStockSummary
+    ? new Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KES', maximumFractionDigits: 2 }).format(manualStockSummary.cost)
+    : '';
 
   return (
     <div className="space-y-8">
@@ -193,7 +222,7 @@ export default async function DashboardOverviewPage() {
       />
 
       {/* Stat Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+      <div className={`grid grid-cols-1 gap-4 sm:gap-6 ${manualStockSummary ? 'sm:grid-cols-4' : 'sm:grid-cols-3'}`}>
         {/* Total Products */}
         <div className="bg-panel border border-line rounded-xl p-5 sm:p-6 space-y-2 shadow-2xs">
           <span className="text-xs font-semibold uppercase tracking-wider text-ink-500">
@@ -242,6 +271,14 @@ export default async function DashboardOverviewPage() {
             <p className="text-xs opacity-90 font-medium">All items healthy</p>
           )}
         </Link>
+        {manualStockSummary && (
+          <Link href="/dashboard/stock-report" className="block rounded-xl border border-line bg-panel p-5 shadow-2xs transition-colors hover:bg-subtle sm:p-6">
+            <span className="text-xs font-semibold uppercase tracking-wider text-ink-500">Manual stock changes (last 30 days)</span>
+            <div className="mt-2 text-2xl font-bold font-serif text-ink-900">{manualStockSummary.units} units</div>
+            <p className="mt-1 text-xs text-ink-600">Write-offs and corrections · {formattedManualStockCost}</p>
+            <span className="mt-2 inline-block text-xs font-semibold text-accent-text">View stock report →</span>
+          </Link>
+        )}
       </div>
 
       {/* Main Grid: Stock Alerts Section + Chart Section */}

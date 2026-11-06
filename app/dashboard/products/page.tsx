@@ -118,6 +118,7 @@ export default async function ProductsPage() {
       activeCategories={activeCategories}
       activeSuppliers={activeSuppliers}
       barcodes={barcodes}
+      role={resolution.context.role}
     />
   );
 }

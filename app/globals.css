@@ -348,6 +348,51 @@ body {
   }
 }
 
+@page {
+  size: landscape;
+  margin: 12mm;
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  .stock-report,
+  .stock-report * {
+    visibility: visible;
+  }
+
+  .stock-report {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    color: #111827;
+  }
+
+  .stock-report .print\:hidden,
+  .stock-report__mobile {
+    display: none !important;
+  }
+
+  .stock-report__table {
+    display: block !important;
+    overflow: visible !important;
+    border-color: #9ca3af !important;
+  }
+
+  .stock-report__table table {
+    min-width: 0 !important;
+    font-size: 8pt !important;
+  }
+
+  .stock-report__table th,
+  .stock-report__table td {
+    padding: 4px !important;
+    color: #111827 !important;
+  }
+}
+
 @keyframes walkthrough-scan {
   to {
     opacity: 0.35;

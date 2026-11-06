@@ -11,16 +11,20 @@ interface PurchasesTableProps {
   purchases: Purchase[];
   activeSuppliers: Supplier[];
   activeProducts: ProductStockLevel[];
+  initialDetailsId: string | null;
 }
 
 export default function PurchasesTable({
   purchases,
   activeSuppliers,
   activeProducts,
+  initialDetailsId,
 }: PurchasesTableProps) {
   const router = useRouter();
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
-  const [selectedPurchase, setSelectedPurchase] = useState<Purchase | null>(null);
+  const [selectedPurchase, setSelectedPurchase] = useState<Purchase | null>(
+    () => purchases.find((purchase) => purchase.id === initialDetailsId) ?? null,
+  );
   const [supplierFilter, setSupplierFilter] = useState<string>('all');
 
   const formatCurrency = (val: number | null | undefined) => {
@@ -317,7 +321,10 @@ export default function PurchasesTable({
       {/* Purchase Details Modal */}
       <PurchaseDetailsModal
         isOpen={Boolean(selectedPurchase)}
-        onClose={() => setSelectedPurchase(null)}
+        onClose={() => {
+          setSelectedPurchase(null);
+          if (initialDetailsId) router.replace('/dashboard/purchases');
+        }}
         purchase={selectedPurchase}
       />
     </div>

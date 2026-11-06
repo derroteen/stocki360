@@ -38,7 +38,9 @@ This document explains what key files and modules do without changing source cod
 - `app/dashboard/products/page.tsx`: Server-side product data loader for active business.
 - `app/dashboard/products/ProductsTable.tsx`: Product list/table with responsive layouts.
 - `app/dashboard/products/ProductModal.tsx`: Add/edit/archive product dialog; calls secure product APIs.
-- `app/dashboard/products/StockMovementModal.tsx`: Record stock movement dialog; insert-only operation via API.
+- `app/dashboard/products/AdjustStockModal.tsx`: Purchase handoff, write-off, and counted-stock correction dialog.
+- `app/dashboard/products/MovementHistoryModal.tsx`: Paginated stock ledger history from `stock_movement_deltas`.
+- `app/dashboard/stock-report/`: Owner/admin reconciliation report and CSV/print views.
 
 ## API Routes
 
@@ -46,7 +48,7 @@ This document explains what key files and modules do without changing source cod
 - `app/api/businesses/route.ts`: Creates a business through RPC and sets active business cookie.
 - `app/api/products/route.ts`: Creates product for validated active business and role.
 - `app/api/products/[id]/route.ts`: Updates or archives product with business/role checks.
-- `app/api/stock-movements/route.ts`: Inserts stock movement only when product belongs to active business.
+- `app/api/stock-movements/route.ts`: Records opening stock, write-offs, and stock counts for the active business.
 
 ## Supabase Client and Tenancy Helpers
 

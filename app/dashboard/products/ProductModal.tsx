@@ -3,7 +3,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import type { BusinessRole } from '@/lib/supabase/business-context';
+import { OPENING_STOCK_ROLES } from '@/lib/supabase/stock-roles';
 import { ProductStockLevel, Category, Supplier, ProductBarcode } from '@/lib/supabase/types';
+import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import FormField from '@/components/forms/FormField';
 import FormErrorSummary from '@/components/forms/FormErrorSummary';
 import { clearValidFieldError, focusFirstInvalid, validateFields, type FieldRule, type FormErrors } from '@/components/forms/validation';
@@ -18,6 +21,7 @@ const FIELD_LABELS: Record<string, string> = {
   'units-per-package': 'Units per package',
   'package-cost-price': 'Package cost price',
   'package-sell-price': 'Package sell price',
+  'opening-stock': 'Opening stock',
 };
 
 interface ProductModalProps {
@@ -29,6 +33,7 @@ interface ProductModalProps {
   onSaveSuccess?: () => void;
   categories: Category[];
   suppliers: Supplier[];
+  role: BusinessRole;
 }
 
 interface BarcodeFormRow {
@@ -48,6 +53,7 @@ export default function ProductModal({
   onSaveSuccess,
   categories = [],
   suppliers = [],
+  role,
 }: ProductModalProps) {
   if (!isOpen) return null;
 
@@ -60,6 +66,7 @@ export default function ProductModal({
       onSaveSuccess={onSaveSuccess}
       categories={categories}
       suppliers={suppliers}
+      role={role}
     />
   );
 }
@@ -71,6 +78,7 @@ function ProductModalForm({
   onSaveSuccess,
   categories = [],
   suppliers = [],
+  role,
 }: Omit<ProductModalProps, 'isOpen'>) {
   const router = useRouter();
   const skuHelpRef = useRef<HTMLDivElement>(null);
@@ -115,8 +123,16 @@ function ProductModalForm({
   const [suggestingSku, setSuggestingSku] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<FormErrors>({});
+  const [openingStock, setOpeningStock] = useState('');
+  const [openingCheck, setOpeningCheck] = useState<'checking' | 'available' | 'recorded' | 'error'>(product ? 'checking' : 'recorded');
+  const [openingCheckError, setOpeningCheckError] = useState<string | null>(null);
+  const [createdProductId, setCreatedProductId] = useState<string | null>(null);
+  const [openingFailed, setOpeningFailed] = useState(false);
+  const [openingRequestStarted, setOpeningRequestStarted] = useState(false);
+  const openingKeyRef = useRef<string | null>(null);
 
   const isEdit = Boolean(product);
+  const canSetOpeningStock = OPENING_STOCK_ROLES.includes(role);
   const hasPackaging = Boolean(packageUnit && unitsPerPackage && Number(unitsPerPackage) > 0);
   const unitLabel = stockUnit.trim() || 'unit';
 
@@ -156,6 +172,38 @@ function ProductModalForm({
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [isSkuHelpOpen]);
+
+  useEffect(() => {
+    if (!product || !canSetOpeningStock) return;
+    let isMounted = true;
+    const checkExistingMovements = async () => {
+      try {
+        const supabase = createSupabaseBrowserClient();
+        const { count, error: countError } = await supabase
+          .from('stock_movements')
+          .select('id', { count: 'exact', head: true })
+          .eq('product_id', product.id);
+
+        if (!isMounted) return;
+        if (countError) {
+          setOpeningCheck('error');
+          setOpeningCheckError('Unable to check whether opening stock has already been recorded.');
+          return;
+        }
+        setOpeningCheck(count === 0 ? 'available' : 'recorded');
+      } catch (countError) {
+        if (!isMounted) return;
+        console.error('Unable to check whether opening stock has already been recorded:', countError);
+        setOpeningCheck('error');
+        setOpeningCheckError('Unable to check whether opening stock has already been recorded.');
+      }
+    };
+
+    void checkExistingMovements();
+    return () => {
+      isMounted = false;
+    };
+  }, [product, canSetOpeningStock]);
 
   const handleSuggestSku = async () => {
     if (sku.trim() && !window.confirm('Replace the current product code with a suggested code?')) {
@@ -220,9 +268,77 @@ function ProductModalForm({
     });
   };
 
+  const recordOpeningStock = async (productId: string) => {
+    openingKeyRef.current ??= crypto.randomUUID();
+    setOpeningRequestStarted(true);
+    const response = await fetch('/api/stock-movements', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        productId,
+        kind: 'opening',
+        quantity: Number(openingStock),
+        reason_code: null,
+        note: null,
+        idempotencyKey: openingKeyRef.current,
+      }),
+    });
+
+    if (!response.ok) {
+      const body = (await response.json().catch(() => null)) as { error?: string; field?: string } | null;
+      if (body?.field) setFieldErrors({ 'opening-stock': body.error ?? 'Enter a valid opening quantity.' });
+      throw new Error(body?.error ?? 'Unable to record opening stock.');
+    }
+  };
+
+  const handleRetryOpeningStock = async () => {
+    if (!createdProductId || loading) return;
+    setLoading(true);
+    setError(null);
+    try {
+      await recordOpeningStock(createdProductId);
+      setOpeningFailed(false);
+      router.refresh();
+      onSaveSuccess?.();
+      onClose();
+    } catch (openingError) {
+      setOpeningFailed(true);
+      setError(`The product was created, but its opening stock failed: ${openingError instanceof Error ? openingError.message : 'Please try again.'}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSetExistingOpeningStock = async () => {
+    if (!product || loading) return;
+    const errors = validateFields([
+      { id: 'opening-stock', label: 'Opening stock', value: openingStock, required: true, min: 1, wholeNumber: true },
+    ]);
+    setFieldErrors(errors);
+    if (Object.keys(errors).length) {
+      focusFirstInvalid(errors);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    try {
+      await recordOpeningStock(product.id);
+      setOpeningCheck('recorded');
+      router.refresh();
+      onSaveSuccess?.();
+      onClose();
+    } catch (openingError) {
+      setError(openingError instanceof Error ? openingError.message : 'Unable to record opening stock.');
+      window.setTimeout(() => errorSummaryRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 0);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (loading) return;
+    if (loading || createdProductId) return;
     const errors = validateFields([
       { id: 'product-code', label: 'Product code', value: sku, required: true },
       { id: 'product-name', label: 'Name', value: name, required: true },
@@ -233,6 +349,9 @@ function ProductModalForm({
       ...(packageUnit ? [{ id: 'units-per-package', label: 'Units per package', value: unitsPerPackage, required: true, min: 1, wholeNumber: true }] : []),
       ...(packageCostPrice ? [{ id: 'package-cost-price', label: 'Package cost price', value: packageCostPrice, min: 0 }] : []),
       ...(packageSellPrice ? [{ id: 'package-sell-price', label: 'Package sell price', value: packageSellPrice, min: 0 }] : []),
+      ...(!isEdit && canSetOpeningStock && openingStock.trim()
+        ? [{ id: 'opening-stock', label: 'Opening stock', value: openingStock, min: 1, wholeNumber: true }]
+        : []),
     ]);
     setFieldErrors(errors);
     if (Object.keys(errors).length > 0) {
@@ -287,6 +406,18 @@ function ProductModalForm({
         }
         throw new Error(body?.error ?? 'An error occurred while saving the product');
       } else {
+        const savedProduct = (await response.json()) as { id?: string };
+        if (!isEdit && canSetOpeningStock && openingStock.trim() && savedProduct.id) {
+          setCreatedProductId(savedProduct.id);
+          try {
+            await recordOpeningStock(savedProduct.id);
+          } catch (openingError) {
+            setOpeningFailed(true);
+            setError(`The product was created, but its opening stock failed: ${openingError instanceof Error ? openingError.message : 'Please try again.'}`);
+            window.setTimeout(() => errorSummaryRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 0);
+            return;
+          }
+        }
         router.refresh();
         if (onSaveSuccess) onSaveSuccess();
         onClose();
@@ -337,7 +468,8 @@ function ProductModalForm({
           <button
             type="button"
             onClick={onClose}
-            className="min-h-[44px] min-w-[44px] flex items-center justify-center text-ink-500 hover:text-ink-900 transition-colors"
+            disabled={loading}
+            className="min-h-[44px] min-w-[44px] flex items-center justify-center text-ink-500 hover:text-ink-900 transition-colors disabled:opacity-50"
           >
             ✕
           </button>
@@ -661,6 +793,76 @@ function ProductModalForm({
                 )}
             </div>
           )}
+
+          {canSetOpeningStock && !isEdit && (
+            <div className="border-t border-line pt-4">
+              <FormField
+                id="opening-stock"
+                label={<>Opening stock (how many you have now) <span className="font-normal text-ink-500">(optional)</span></>}
+                hint="Use this once for the stock already on your shelves when you start tracking this product."
+                error={fieldErrors['opening-stock']}
+              >
+                <input
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={openingStock}
+                  disabled={Boolean(createdProductId)}
+                  onChange={(event) => {
+                    setOpeningStock(event.target.value);
+                    setFieldErrors((current) => {
+                      const next = { ...current };
+                      delete next['opening-stock'];
+                      return next;
+                    });
+                    setError(null);
+                  }}
+                  className="min-h-[44px] w-full rounded-lg border border-line bg-card px-3 py-2 text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
+                />
+              </FormField>
+            </div>
+          )}
+
+          {canSetOpeningStock && isEdit && (
+            <div className="space-y-3 border-t border-line pt-4">
+              <h3 className="text-sm font-semibold text-ink-900">Opening stock</h3>
+              {openingCheck === 'checking' && <p className="text-sm text-ink-500">Checking stock history…</p>}
+              {openingCheck === 'available' && (
+                <>
+                  <p className="text-sm text-ink-600">
+                    This product has no stock movements yet. Set the quantity already on your shelves once.
+                  </p>
+                  <FormField id="opening-stock" label="Opening stock (how many you have now)" required hint="Enter a whole number greater than zero." error={fieldErrors['opening-stock']}>
+                    <input
+                      type="number"
+                      min="1"
+                      step="1"
+                      value={openingStock}
+                      disabled={loading || openingRequestStarted}
+                      onChange={(event) => {
+                        setOpeningStock(event.target.value);
+                        setFieldErrors((current) => {
+                          const next = { ...current };
+                          delete next['opening-stock'];
+                          return next;
+                        });
+                      }}
+                      className="min-h-[44px] w-full rounded-lg border border-line bg-card px-3 py-2 text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500"
+                    />
+                  </FormField>
+                  <button type="button" onClick={handleSetExistingOpeningStock} disabled={loading} className="min-h-[44px] rounded-lg border border-accent-100 bg-accent-50 px-4 text-sm font-semibold text-accent-text hover:bg-accent-100 disabled:opacity-60">
+                    {loading ? 'Recording…' : 'Set opening stock'}
+                  </button>
+                </>
+              )}
+              {openingCheck === 'recorded' && product && (product.current_stock ?? 0) > 0 && (
+                <p className="text-sm text-ink-600">Opening stock can only be recorded once, before the first stock movement.</p>
+              )}
+              {openingCheck === 'error' && (
+                <p className="text-sm text-warn-700">{openingCheckError}</p>
+              )}
+            </div>
+          )}
         </form>
 
         <div ref={errorSummaryRef} className="sticky bottom-0 z-10 shrink-0 border-t border-line bg-panel px-6 py-4 sm:px-8">
@@ -689,11 +891,16 @@ function ProductModalForm({
           <button
             type="submit"
             form="product-form"
-            disabled={loading}
+            disabled={loading || Boolean(createdProductId)}
             className="min-h-[44px] px-4 py-2 text-sm font-medium text-white bg-accent-500 hover:bg-accent-600 rounded-lg transition-colors shadow-sm"
           >
             {loading ? 'Saving...' : isEdit ? 'Save Changes' : 'Create Product'}
           </button>
+          {openingFailed && (
+            <button type="button" onClick={handleRetryOpeningStock} disabled={loading} className="min-h-[44px] rounded-lg bg-accent-600 px-4 text-sm font-semibold text-white hover:bg-accent-700 disabled:opacity-60">
+              {loading ? 'Retrying…' : 'Retry opening stock'}
+            </button>
+          )}
           </div>
         </div>
       </div>

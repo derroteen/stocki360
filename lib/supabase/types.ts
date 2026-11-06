@@ -52,6 +52,73 @@ export interface ProductStockLevel extends ProductRow {
   is_low_stock: boolean;
 }
 
+export type ManualStockMovementKind = 'opening' | 'write_off' | 'count';
+export type StockMovementSource =
+  | 'opening'
+  | 'purchase'
+  | 'sale'
+  | 'write_off'
+  | 'count_correction'
+  | 'customer_return'
+  | 'legacy';
+export type StockMovementReasonCode =
+  | 'damaged'
+  | 'expired'
+  | 'lost'
+  | 'own_use'
+  | 'supplier_return'
+  | 'other';
+
+export interface StockMovementDelta {
+  id: string;
+  product_id: string;
+  movement_type: string;
+  quantity: number;
+  source: StockMovementSource;
+  reason_code: string | null;
+  reference_type: 'sale' | 'purchase' | null;
+  reference_id: string | null;
+  unit_cost: number | null;
+  note: string | null;
+  created_at: string;
+  created_by: string | null;
+  created_by_email: string | null;
+  stock_before: number | null;
+  stock_after: number | null;
+  delta: number;
+}
+
+export interface RecordManualStockMovementArgs {
+  p_product_id: string;
+  p_kind: ManualStockMovementKind;
+  p_quantity: number;
+  p_reason_code: StockMovementReasonCode | null;
+  p_note: string | null;
+  p_idempotency_key: string;
+}
+
+export interface StockReconciliationArgs {
+  p_business_id: string;
+  p_from: string;
+  p_to: string;
+}
+
+export interface StockReconciliationRow {
+  product_id: string;
+  product_name: string;
+  opening_balance: number;
+  opening_entries: number;
+  purchases: number;
+  sales: number;
+  write_offs: number;
+  count_corrections: number;
+  unclassified_legacy: number;
+  closing: number;
+  write_off_cost: number;
+  count_correction_cost: number;
+  unexplained_difference: number;
+}
+
 export interface ProductBarcode {
   id: string;
   product_id: string;

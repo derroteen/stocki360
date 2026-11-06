@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import type { User } from '@supabase/supabase-js';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import type { BusinessRole } from '@/lib/supabase/business-context';
+import { MANUAL_ADJUSTMENT_ROLES } from '@/lib/supabase/stock-roles';
 import ThemeToggle from '@/components/ThemeToggle';
 
 interface DashboardNavProps {
@@ -64,6 +65,7 @@ export default function DashboardNav({ businessName, role, canSwitch }: Dashboar
   const isSalesActive = pathname.startsWith('/dashboard/sales');
   const isTeamActive = pathname.startsWith('/dashboard/team');
   const isGuideActive = pathname.startsWith('/dashboard/guide');
+  const isStockReportActive = pathname.startsWith('/dashboard/stock-report');
 
   const navigationGroups = [
     {
@@ -85,6 +87,9 @@ export default function DashboardNav({ businessName, role, canSwitch }: Dashboar
       label: 'Manage',
       links: [
         { href: '/dashboard/team', label: 'Team', active: isTeamActive },
+        ...(role && MANUAL_ADJUSTMENT_ROLES.includes(role)
+          ? [{ href: '/dashboard/stock-report', label: 'Stock report', active: isStockReportActive }]
+          : []),
         { href: '/dashboard/guide', label: 'Guide', active: isGuideActive },
       ],
     },

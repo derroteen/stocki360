@@ -7,7 +7,8 @@ import PurchasesTable from './PurchasesTable';
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Purchases' };
 
-export default async function PurchasesPage() {
+export default async function PurchasesPage({ searchParams }: { searchParams: Promise<{ details?: string }> }) {
+  const { details } = await searchParams;
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -107,9 +108,11 @@ export default async function PurchasesPage() {
 
   return (
     <PurchasesTable
+      key={details ?? 'purchases'}
       purchases={purchases}
       activeSuppliers={suppliers}
       activeProducts={activeProducts}
+      initialDetailsId={details ?? null}
     />
   );
 }

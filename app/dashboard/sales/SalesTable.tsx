@@ -13,12 +13,15 @@ interface SalesTableProps {
   activeProducts: ProductStockLevel[];
   barcodes: ProductBarcode[];
   businessName: string | null;
+  initialDetailsId: string | null;
 }
 
-export default function SalesTable({ sales, activeProducts, barcodes, businessName }: SalesTableProps) {
+export default function SalesTable({ sales, activeProducts, barcodes, businessName, initialDetailsId }: SalesTableProps) {
   const router = useRouter();
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
-  const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
+  const [selectedSale, setSelectedSale] = useState<Sale | null>(
+    () => sales.find((sale) => sale.id === initialDetailsId) ?? null,
+  );
   const [receiptSale, setReceiptSale] = useState<Sale | null>(null);
   const [recentSale, setRecentSale] = useState<Sale | null>(null);
   const [paymentFilter, setPaymentFilter] = useState<string>('all');
@@ -356,7 +359,10 @@ export default function SalesTable({ sales, activeProducts, barcodes, businessNa
 
       <SaleDetailsModal
         isOpen={Boolean(selectedSale)}
-        onClose={() => setSelectedSale(null)}
+        onClose={() => {
+          setSelectedSale(null);
+          if (initialDetailsId) router.replace('/dashboard/sales');
+        }}
         onReceipt={setReceiptSale}
         sale={selectedSale}
       />

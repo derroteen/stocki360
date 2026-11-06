@@ -4,9 +4,10 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ProductStockLevel, Category, Supplier, ProductBarcode } from '@/lib/supabase/types';
+import type { BusinessRole } from '@/lib/supabase/business-context';
 import { getStockStatus } from '@/lib/stock-alerts';
 import ProductModal from './ProductModal';
-import StockMovementModal from './StockMovementModal';
+import AdjustStockModal from './AdjustStockModal';
 import MovementHistoryModal from './MovementHistoryModal';
 
 interface ProductsTableProps {
@@ -22,11 +23,12 @@ interface ProductsTableProps {
   activeSuppliers: Supplier[];
   /** All barcodes for the business, across all products. */
   barcodes: ProductBarcode[];
+  role: BusinessRole;
 }
 
 type ProductView = 'active' | 'archived';
 
-export default function ProductsTable({ active, archived, allCategories, allSuppliers, activeCategories, activeSuppliers, barcodes }: ProductsTableProps) {
+export default function ProductsTable({ active, archived, allCategories, allSuppliers, activeCategories, activeSuppliers, barcodes, role }: ProductsTableProps) {
   const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<ProductStockLevel | null>(null);
@@ -336,7 +338,7 @@ export default function ProductsTable({ active, archived, allCategories, allSupp
                             }}
                             className="min-h-[44px] px-3 py-1.5 text-xs font-medium text-accent-text bg-accent-50 hover:bg-accent-100 border border-accent-100 rounded-lg transition-colors inline-flex items-center gap-1 cursor-pointer"
                           >
-                            Record movement
+                            Adjust stock
                           </button>
                         </div>
                       ) : (
@@ -454,7 +456,7 @@ export default function ProductsTable({ active, archived, allCategories, allSupp
                       }}
                       className="min-h-[44px] w-full px-3 py-1.5 text-xs font-medium text-accent-text bg-accent-50 hover:bg-accent-100 border border-accent-100 rounded-lg transition-colors cursor-pointer"
                     >
-                      Record movement
+                      Adjust stock
                     </button>
                   </div>
                 ) : (
@@ -486,12 +488,14 @@ export default function ProductsTable({ active, archived, allCategories, allSupp
         onSaveSuccess={handleSaveOrDelete}
         categories={activeCategories}
         suppliers={activeSuppliers}
+        role={role}
       />
 
       {/* Stock Movement Modal */}
       {view === 'active' && movementProduct && (
-        <StockMovementModal
+        <AdjustStockModal
           product={movementProduct}
+          role={role}
           onClose={() => setMovementProduct(null)}
           onSaved={() => {
             handleSaveOrDelete();

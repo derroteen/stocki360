@@ -8,6 +8,7 @@ import {
   SALE_WRITE_ROLES,
   TEAM_MANAGE_ROLES,
 } from '@/lib/supabase/business-context';
+import { MANUAL_ADJUSTMENT_ROLES, OPENING_STOCK_ROLES } from '@/lib/supabase/stock-roles';
 import type { BusinessRole } from '@/lib/supabase/business-context';
 import { ShowSetupChecklistButton } from '../SetupChecklist';
 
@@ -50,10 +51,10 @@ const stepDetails: Record<
     commonMistake: 'Expecting a new product to have stock; new products start at zero.',
   },
   'add-stock': {
-    whatItIs: 'A purchase or stock adjustment records inventory arriving in the business.',
-    whatToDo: 'Receive a purchase or record an "in"/adjustment movement for the product.',
-    example: 'Record a purchase that receives 60 PVC Pipe 20mm units.',
-    commonMistake: 'Trying to sell before stock has been received or adjusted in.',
+    whatItIs: 'Opening stock records what is already on your shelves when you start tracking a product. Purchases record new stock arriving afterward.',
+    whatToDo: 'Enter opening stock when adding a product. Use purchases for new stock, and use write-offs or stock counts to correct inventory.',
+    example: 'Set 20 units as opening stock when adding a product, then record a purchase when 60 more arrive.',
+    commonMistake: 'Using a write-off or stock count to record newly purchased stock.',
   },
   'first-sale': {
     whatItIs: 'A sale records products sold, quantities, payment method, and total.',
@@ -86,7 +87,8 @@ export default async function GuidePage() {
   const roles: BusinessRole[] = ['owner', 'admin', 'storekeeper', 'cashier'];
   const permissionRows: { label: string; allowedRoles: readonly BusinessRole[] }[] = [
     { label: 'Products, categories, and suppliers', allowedRoles: PRODUCT_WRITE_ROLES },
-    { label: 'Purchases and stock movements', allowedRoles: PRODUCT_WRITE_ROLES },
+    { label: 'Purchases and opening stock', allowedRoles: OPENING_STOCK_ROLES },
+    { label: 'Write-offs and stock counts', allowedRoles: MANUAL_ADJUSTMENT_ROLES },
     { label: 'Record sales', allowedRoles: SALE_WRITE_ROLES },
     { label: 'Manage team invitations', allowedRoles: TEAM_MANAGE_ROLES },
   ];
@@ -208,11 +210,15 @@ export default async function GuidePage() {
           </div>
           <div className="py-3">
             <dt className="font-semibold text-ink-900">Why can’t I sell a new product?</dt>
-            <dd className="mt-1 text-sm text-ink-600">New products start with zero stock; receive or adjust stock in first.</dd>
+            <dd className="mt-1 text-sm text-ink-600">New products start at zero unless you enter opening stock while adding them. New stock afterward is recorded as a purchase.</dd>
           </div>
           <div className="py-3">
             <dt className="font-semibold text-ink-900">How can I add stock?</dt>
-            <dd className="mt-1 text-sm text-ink-600">Record a purchase or a stock-in/adjustment movement.</dd>
+            <dd className="mt-1 text-sm text-ink-600">Enter opening stock when adding a product. Record new arrivals through Purchases (a supplier is optional); use write-offs or stock counts only for corrections.</dd>
+          </div>
+          <div className="py-3">
+            <dt className="font-semibold text-ink-900">What is the difference between a stock count and a write-off?</dt>
+            <dd className="mt-1 text-sm text-ink-600">A stock count sets the system quantity to the total you physically counted. A write-off records a specific quantity that is no longer available and requires a reason; Lost or stolen and Other also need a note.</dd>
           </div>
           <div className="py-3">
             <dt className="font-semibold text-ink-900">Does a purchase need a supplier?</dt>
@@ -225,7 +231,7 @@ export default async function GuidePage() {
           <div className="py-3">
             <dt className="font-semibold text-ink-900">Who can manage products and stock?</dt>
             <dd className="mt-1 text-sm text-ink-600">
-              Owners, admins, and storekeepers can manage products, purchases, and stock movements; cashiers can record sales.
+              Owners and admins can manage products, purchases, write-offs, stock counts, and sales. Storekeepers can manage products, purchases, opening stock, and sales; cashiers can record sales.
             </dd>
           </div>
         </dl>

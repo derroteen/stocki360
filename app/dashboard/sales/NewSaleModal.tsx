@@ -65,7 +65,7 @@ export default function NewSaleModal({
                 No stock available
               </h2>
               <p className="mt-2 text-sm text-ink-600">
-                Nothing in stock to sell yet. Record a purchase or a stock adjustment first.
+                Nothing in stock to sell yet. Set opening stock when adding a product, or record a purchase.
               </p>
             </div>
             <button
@@ -86,11 +86,11 @@ export default function NewSaleModal({
               Record a purchase
             </Link>
             <Link
-              href="/dashboard/products"
+              href="/dashboard/purchases"
               onClick={onClose}
               className="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-line-strong bg-card px-4 text-sm font-semibold text-ink-700 hover:bg-subtle-strong"
             >
-              Stock adjustment
+              Go to purchases
             </Link>
           </div>
         </section>
@@ -513,7 +513,7 @@ function NewSaleForm({
         const pkgQty = parseInt(it.packageQuantity, 10);
         const pkgPrice = parseFloat(it.packageUnitPrice);
 
-        // Client-side stock hint only -- the RPC/record_stock_movement is
+        // Client-side stock hint only -- the sale RPC is
         // the actual source of truth and will reject an over-sell even if
         // this check is somehow bypassed or current_stock is stale.
         payloadItems.push({

@@ -99,6 +99,7 @@ export default async function LowStockPage() {
       activeCategories={activeCategories}
       activeSuppliers={activeSuppliers}
       barcodes={barcodes}
+      role={resolution.context.role}
     />
   );
 }

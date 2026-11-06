@@ -7,7 +7,8 @@ import SalesTable from './SalesTable';
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Sales' };
 
-export default async function SalesPage() {
+export default async function SalesPage({ searchParams }: { searchParams: Promise<{ details?: string }> }) {
+  const { details } = await searchParams;
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -108,10 +109,12 @@ export default async function SalesPage() {
 
   return (
     <SalesTable
+      key={details ?? 'sales'}
       sales={sales}
       activeProducts={activeProducts}
       barcodes={barcodes}
       businessName={businessName}
+      initialDetailsId={details ?? null}
     />
   );
 }

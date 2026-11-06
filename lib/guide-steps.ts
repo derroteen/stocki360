@@ -43,7 +43,7 @@ export const GUIDE_STEPS = [
   {
     id: 'add-stock',
     title: 'Add stock',
-    whyItMatters: 'A product needs available stock before it can be sold.',
+    whyItMatters: 'Set opening stock when adding a product, record new stock through purchases, and use write-offs or stock counts only to correct the record.',
     actionLabel: 'Receive stock',
     href: '/dashboard/purchases',
     optional: false,
