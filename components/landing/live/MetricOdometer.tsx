@@ -30,12 +30,15 @@ export default function MetricOdometer({
   const formatted = new Intl.NumberFormat("en-KE", { maximumFractionDigits: 0 }).format(value);
 
   return (
-    <span className="inline-flex items-baseline tabular-nums" aria-label={`${prefix}${formatted}${suffix}`}>
-      {prefix}
-      {formatted.split("").map((digit, index) => (
-        <OdometerDigit key={`${index}-${digit === "," ? "separator" : "digit"}`} digit={digit} />
-      ))}
-      {suffix}
+    <span className="inline-flex items-baseline tabular-nums">
+      <span className="sr-only">{`${prefix}${formatted}${suffix}`}</span>
+      <span aria-hidden="true">
+        {prefix}
+        {formatted.split("").map((digit, index) => (
+          <OdometerDigit key={`${index}-${digit === "," ? "separator" : "digit"}`} digit={digit} />
+        ))}
+        {suffix}
+      </span>
     </span>
   );
 }

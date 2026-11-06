@@ -17,7 +17,7 @@ export default function SceneChrome({
         <span className="h-2 w-2 rounded-full bg-warn-500" />
         <span className="h-2 w-2 rounded-full bg-good-600" />
         <div className="ml-2 min-w-0 flex-1 truncate rounded-md border border-line bg-card px-2 py-0.5 text-center text-[10px] text-ink-500 sm:text-xs">
-          app.stocki360.com
+          stocki360.vercel.app
         </div>
       </div>
       {children}

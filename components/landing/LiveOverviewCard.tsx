@@ -70,9 +70,9 @@ export default function LiveOverviewCard() {
   const countUpCompleteRef = useRef(false);
   const alertStepRef = useRef(0);
   const thresholdAlertIndexRef = useRef(0);
-  const currentCountsRef = useRef<Counts>({ products: 0, lowStock: 0, updates: 0 });
+  const currentCountsRef = useRef<Counts>(COUNT_TARGETS);
   const prefersReducedMotion = usePrefersReducedMotion();
-  const [counts, setCounts] = useState<Counts>({ products: 0, lowStock: 0, updates: 0 });
+  const [counts, setCounts] = useState<Counts>(COUNT_TARGETS);
   const [alerts, setAlerts] = useState<Alert[]>(INITIAL_ALERTS);
   const [syncing, setSyncing] = useState(false);
   const [highlightedAlertId, setHighlightedAlertId] = useState<string | null>(null);
